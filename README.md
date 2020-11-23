@@ -14,7 +14,7 @@ Features:
 # Example usage
 This [video](https://www.youtube.com/watch?v=bkav_L3kp4E) was made entirely in Factorio by utilizing musical-speaker.
 
-<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/bkav_L3kp4E" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![IMAGE ALT TEXT](https://img.youtube.com/vi/bkav_L3kp4E/0.jpg)](http://www.youtube.com/watch?v=bkav_L3kp4E "Let it go [Factorio]")
 
 # Helpful Tips
 - To convert a midi note number to a melodic pitch, subtract 21.
