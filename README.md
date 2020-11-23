@@ -11,6 +11,11 @@ Features:
 - All percussion instruments provide GM2 drum sounds.
 - Crazy-high polyphony setting of 128, because Why Not.
 
+# Example usage
+This [video](https://www.youtube.com/watch?v=bkav_L3kp4E) was made entirely in Factorio by utilizing musical-speaker.
+
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/bkav_L3kp4E" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 # Helpful Tips
 - To convert a midi note number to a melodic pitch, subtract 21.
 - To convert a midi note number to a percussion sound, subtract 35
