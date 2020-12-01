@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+	  "target": "esnext",
+	  "lib": ["esnext"],
+	  "strict": true,
+	  "baseUrl": ".",
+	  "outDir": "./dist",
+	  "rootDir": "./src",
+	  "moduleResolution": "node",
+	  "paths": {
+		  "__musical-speaker__" : ["src/*"]
+	  }
+	},
+	"tstl": {
+	  "luaTarget": "5.2",
+	  "noImplicitSelf": true,
+	  "sourceMapTraceback": true
+	},
+	"include": [
+	  "src/**/*.ts"
+	]
+  }

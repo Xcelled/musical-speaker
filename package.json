@@ -1,0 +1,32 @@
+{
+  "name": "musical-speaker",
+  "version": "1.0.0",
+  "description": "Adds a speaker to the game that includes 189 instruments for use in music production.",
+  "main": "src/control.ts",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/factorio": "git+https://github.com/sguest/factorio-types.git",
+    "lua-types": "^2.8.0",
+    "typescript-to-lua": "^0.36.0"
+  },
+  "scripts": {
+    "build": "tstl",
+    "dev": "tstl --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xcelled/musical-speaker.git"
+  },
+  "keywords": [
+    "factorio",
+    "speaker",
+    "music",
+    "mod"
+  ],
+  "author": "Mooeing-747",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/Xcelled/musical-speaker/issues"
+  },
+  "homepage": "https://github.com/Xcelled/musical-speaker#readme"
+}
