@@ -1,4 +1,7 @@
+import '../types';
+
 import sounds from './sounds';
+import * as Event from '__stdlib__/stdlib/event/event';
 
 /**
  * 1 based cause these are fed directly to the lua API
@@ -27,8 +30,22 @@ export default class MusicalSpeaker {
 	private combinator: LuaEntity
 	private notePlayers: LuaEntity[]
 
+	static registerEvents() {
+		Event.register(
+			[defines.events.on_built_entity, defines.events.on_robot_built_entity, defines.events.script_raised_built, defines.events.on_entity_cloned, defines.events.script_raised_revive],
+			onBuilt
+		)
+		.register(
+			[defines.events.script_raised_destroy, defines.events.on_entity_destroyed],
+			onDestroyed
+		);
+	}
+
 	constructor(combinator: LuaEntity) {
 		this.combinator = combinator;
+
+		script.register_on_entity_destroyed(this.combinator);
+
 		this.notePlayers = [];
 		this.initialize();
 	}
@@ -129,5 +146,33 @@ export default class MusicalSpeaker {
 			.concat(this.combinator)
 			.filter(e => e.valid)
 			.forEach(e => e.destroy());
+	}
+}
+
+function onDestroyed(args: on_entity_destroyed) {
+	if (!args.unit_number) {
+		return;
+	}
+
+	const speaker = global.speakers[args.unit_number];
+
+	if (speaker) {
+		speaker.destroy();
+		global.speakers[args.unit_number] = undefined;
+	}
+}
+
+function onBuilt(args: on_built_entity | on_robot_built_entity | script_raised_built | on_entity_cloned) {
+	let entity;
+	if ('created_entity' in args) {
+		entity = args.created_entity;
+	} else if ('entity' in args) {
+		entity = args.entity;
+	} else {
+		entity = args.destination;
+	}
+
+	if (entity.name === 'musical-speaker' && entity.unit_number) {
+		global.speakers[entity.unit_number] = new MusicalSpeaker(entity);
 	}
 }

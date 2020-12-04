@@ -1,9 +1,22 @@
+import MusicalSpeaker from './script/musical-speaker';
 import Gui from './script/gui/gui';
 
-script.on_event(defines.events.on_gui_opened, (event: on_gui_opened) => {
-	if (event.entity && event.entity.name === 'musical-speaker') {
-		const player = game.players[event.player_index];
+import * as Event from '__stdlib__/stdlib/event/event';
 
-		new Gui(player.gui.screen).open(event.entity, player);
+declare global {
+	interface GlobalType {
+		speakers: Array<MusicalSpeaker | undefined>;
+	}
+}
+
+MusicalSpeaker.registerEvents();
+
+Event.on_init(() => global.speakers = []);
+
+Event.on_configuration_changed(() => {
+	for (const speaker of global.speakers) {
+		if (speaker) {
+			speaker.initialize();
+		}
 	}
 });
