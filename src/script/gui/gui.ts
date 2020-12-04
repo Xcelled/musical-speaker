@@ -24,7 +24,7 @@ export default class Gui {
 
 		const previewPanel = GuiToolkit.panel({
 			parent: mainContent!,
-			style: 'bordered_frame'
+			//style: 'bordered_frame'
 		}).content;
 
 		(previewPanel.style as LuaStyle).horizontal_align = 'center';
@@ -35,7 +35,7 @@ export default class Gui {
 		});
 
 		(this.preview.style as LuaStyle).width = 400;
-		(this.preview.style as LuaStyle).width = 149;
+		(this.preview.style as LuaStyle).height = 149;
 
 		const volumePanel = GuiToolkit.panel({
 			parent: mainContent!,

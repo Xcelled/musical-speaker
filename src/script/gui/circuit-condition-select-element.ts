@@ -12,7 +12,7 @@ enum ConditionComparator {
 }
 
 const comparatorStrings: ReadonlyArray<string | undefined> = [
-	undefined, '<', '>', '=', '≥', '≤', '≠'
+	'<', '>', '=', '≥', '≤', '≠'
 ]
 
 interface CircuitConditionSettings {
@@ -33,6 +33,8 @@ export default class CircuitConditionSelectElement{
 			caption: ['gui-control-behavior-modes-guis.enabled-condition'] as LocalisedString
 		}).content;
 
+		(panel.style as LuaStyle).vertical_align = 'center';
+
 		this.firstSignalChooser = panel.add({
 			type: 'choose-elem-button',
 			elem_type: 'signal'
@@ -41,12 +43,17 @@ export default class CircuitConditionSelectElement{
 		this.comparatorChooser = panel.add({
 			type: 'drop-down',
 			items: comparatorStrings,
-			selected_index: 0
+			selected_index: 1,
+			style: 'circuit_condition_comparator_dropdown'
 		} as DropDownGuiElementData);
 
 		this.secondConstantButton = panel.add({
-			type: 'button'
-		});
+			type: 'button',
+			style: (this.firstSignalChooser.style as LuaStyle).name,
+			caption: '0'
+		} as ButtonGuiElementData);
+		this.secondConstantButton.tags['value'] = 0;
+		(this.secondConstantButton.style as LuaStyle).font_color = { r: 255, g: 255, b: 255 };
 
 		this.secondSignalChooser = panel.add({
 			type: 'choose-elem-button',
