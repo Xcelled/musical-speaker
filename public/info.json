@@ -7,3 +7,4 @@
     "dependencies": ["base >= 1.0"],
     "description": "Adds a speaker to the game that includes 189 instruments for use in music production."
 }
+	

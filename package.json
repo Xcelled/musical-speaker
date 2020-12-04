@@ -10,7 +10,7 @@
     "typescript-to-lua": "^0.36.0"
   },
   "scripts": {
-    "build": "tstl",
+    "build": "tstl; cp -r public/* dist/",
     "dev": "tstl --watch"
   },
   "repository": {
