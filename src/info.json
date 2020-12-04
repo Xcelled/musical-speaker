@@ -1,9 +1,0 @@
-{
-    "name": "musical-speaker",
-    "version": "1.0.0",
-    "title": "Musical Speaker",
-    "author": "Mooeing-747",
-    "factorio_version": "1.0",
-    "dependencies": ["base >= 1.0"],
-    "description": "Adds a speaker to the game that includes 158 instruments"
-}
