@@ -1,5 +1,3 @@
-import '../types';
-
 import sounds from './sounds';
 import * as Event from '__stdlib__/stdlib/event/event';
 
@@ -34,8 +32,8 @@ export default class MusicalSpeaker {
 		Event.register(
 			[defines.events.on_built_entity, defines.events.on_robot_built_entity, defines.events.script_raised_built, defines.events.on_entity_cloned, defines.events.script_raised_revive],
 			onBuilt
-		)
-		.register(
+		);
+		Event.register(
 			[defines.events.script_raised_destroy, defines.events.on_entity_destroyed],
 			onDestroyed
 		);
@@ -48,6 +46,10 @@ export default class MusicalSpeaker {
 
 		this.notePlayers = [];
 		this.initialize();
+	}
+
+	get entity(): Readonly<LuaEntity> {
+		return this.combinator;
 	}
 
 	/**
@@ -154,11 +156,11 @@ function onDestroyed(args: on_entity_destroyed) {
 		return;
 	}
 
-	const speaker = global.speakers[args.unit_number];
+	const speaker = global.speakers.get(args.unit_number);
 
 	if (speaker) {
 		speaker.destroy();
-		global.speakers[args.unit_number] = undefined;
+		global.speakers.delete(args.unit_number);
 	}
 }
 
@@ -173,6 +175,6 @@ function onBuilt(args: on_built_entity | on_robot_built_entity | script_raised_b
 	}
 
 	if (entity.name === 'musical-speaker' && entity.unit_number) {
-		global.speakers[entity.unit_number] = new MusicalSpeaker(entity);
+		global.speakers.set(entity.unit_number, new MusicalSpeaker(entity));
 	}
 }

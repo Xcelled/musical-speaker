@@ -13,6 +13,4 @@ export interface CategorySpec {
 	instruments: InstrumentSpec[]
 }
 
-export default {
-
-} as CategorySpec[]
+export default require('./sound-data') as CategorySpec[]

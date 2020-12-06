@@ -25,14 +25,14 @@ LOG = logging.getLogger(__name__)
 
 default_soundfont = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
 
-instruments = list(get_inst_list(default_soundfont))
+instruments = list(get_inst_list(default_soundfont))[0:1]
 
 LOG.info("Found %s instruments", len(instruments))
 
 notes = [Note.from_midi(x) for x in range(21, 109)]
 percussion_notes = [Note.from_midi(x.value) for x in general_midi.PercussionNote]
 
-out_dir = Path('../src').absolute()
+out_dir = Path('../public').absolute()
 
 sound_dir = out_dir.joinpath('sound')
 
@@ -71,12 +71,12 @@ for inst in tqdm(instruments, desc='Dumping instruments', unit='instrument'):
 
 	dumps_by_category[category_name].append(d)
 
-LOG.info("Writing musical_speaker.lua")
-lua = Template(filename='musical_speaker.lua.mako').render(output_dir=out_dir, dumps=dumps_by_category)
+LOG.info("Writing sounds.lua")
+lua = Template(filename='sounds.lua.mako').render(output_dir=out_dir, dumps=dumps_by_category)
 
-entity_prototypes = out_dir.joinpath('prototypes/entity')
+entity_prototypes = out_dir.joinpath('script')
 entity_prototypes.mkdir(exist_ok=True, parents=True)
-entity_prototypes.joinpath('musical_speaker.lua').write_text(lua)
+entity_prototypes.joinpath('sound-data.lua').write_text(lua)
 LOG.info("Written to %s", entity_prototypes.absolute())
 
 LOG.info("Writing instruments.cfg")

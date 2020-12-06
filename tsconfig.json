@@ -3,18 +3,14 @@
 	  "target": "esnext",
 	  "lib": ["esnext"],
 	  "strict": true,
-	  "baseUrl": ".",
+	  "baseUrl": "./",
 	  "outDir": "./dist",
 	  "rootDir": "./src",
-	  "moduleResolution": "node",
-	  "paths": {
-		  "__musical-speaker__" : ["src/*"]
-	  }
+	  "moduleResolution": "node"
 	},
 	"tstl": {
 	  "luaTarget": "5.2",
-	  "noImplicitSelf": true,
-	  "sourceMapTraceback": true
+	  "noImplicitSelf": true
 	},
 	"include": [
 	  "src/**/*.ts"

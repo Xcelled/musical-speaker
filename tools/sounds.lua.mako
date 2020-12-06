@@ -19,7 +19,7 @@ def relativize(soundPath, output_dir):
 return {
 	% for category, inst_dumps in sortDumps(dumps).items():
 	{
-		name = "${category.name}",
+		name = "${category}",
 		instruments = {
 			% for inst_dump in inst_dumps:
 			{

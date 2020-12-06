@@ -1,4 +1,4 @@
-/** @noImplicitThis */
+/** @noSelfInFile */
 
 type EventId = defines.events | number | string | Array<defines.events | number | string>
 
