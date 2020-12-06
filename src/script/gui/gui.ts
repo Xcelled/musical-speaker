@@ -1,8 +1,8 @@
 import * as Events from '__stdlib__/stdlib/event/event';
 
 import GuiToolkit from './gui-toolkit';
-import CircuitConditionSelectElement from './circuit-condition-select-element';
-import MusicalSpeaker from '../musical-speaker';
+import * as CircuitConditionSelectElement from './circuit-condition-select-element';
+import * as MusicalSpeaker from '../musical-speaker';
 import sounds from '../sounds';
 
 function L(str: string, ...formatArgs: /** @vararg */ string[]) {
@@ -11,211 +11,210 @@ function L(str: string, ...formatArgs: /** @vararg */ string[]) {
 
 const EventType = defines.events;
 
-export default class Gui {
-	static registerEvents() {
-		Events.register([
-			EventType.on_player_left_game,
-			EventType.on_player_removed,
-			EventType.on_player_kicked],
-			onPlayerLeave
-		);
+interface Gui {
+	window: LuaGuiElement;
+	preview: LuaGuiElement;
+	volumeSlider: LuaGuiElement;
+	enabledConditionSelect: CircuitConditionSelectElement.Type;
+	categorySelect: LuaGuiElement;
+	instrumentSelect: LuaGuiElement;
+	noteSelect: LuaGuiElement;
+	speaker: MusicalSpeaker.Type | undefined;
+	player: LuaPlayer;
+}
 
-		Events.register([EventType.on_gui_opened], onGuiOpened);
-		Events.register([EventType.on_gui_closed], onGuiClosed);
+export type Type = Gui;
 
-		Events.register([EventType.on_gui_value_changed], handleSliderChanged);
-		Events.register([EventType.on_gui_elem_changed], handleChooseElementChanged);
-		Events.register([EventType.on_gui_selection_state_changed], handleDropdownChanged);
+export function registerEvents() {
+	Events.register([
+		EventType.on_player_left_game,
+		EventType.on_player_removed,
+		EventType.on_player_kicked],
+		onPlayerLeave
+	);
+
+	Events.register([EventType.on_gui_opened], onGuiOpened);
+	Events.register([EventType.on_gui_closed], onGuiClosed);
+
+	Events.register([EventType.on_gui_value_changed], handleSliderChanged);
+	Events.register([EventType.on_gui_elem_changed], handleChooseElementChanged);
+	Events.register([EventType.on_gui_selection_state_changed], handleDropdownChanged);
+}
+
+export function create(player: LuaPlayer): Gui {
+	let gui: any = {};
+	gui.player = player;
+
+	const { element, mainContent } = GuiToolkit.window({
+		parent: player.gui.screen,
+		caption: L('entity-name.musical-speaker')
+	});
+
+	gui.window = element;
+
+	const previewPanel = GuiToolkit.panel({
+		parent: mainContent!,
+		//style: 'bordered_frame'
+	}).content;
+
+	(previewPanel.style as LuaStyle).horizontal_align = 'center';
+	(previewPanel.style as LuaStyle).vertical_align = 'center';
+
+	gui.preview = previewPanel.add({
+		type: 'entity-preview'
+	});
+
+	(gui.preview.style as LuaStyle).width = 400;
+	(gui.preview.style as LuaStyle).height = 149;
+
+	const volumePanel = GuiToolkit.panel({
+		parent: mainContent!,
+		direction: "horizontal"
+	}).content;
+
+	volumePanel.add({
+		type: "label",
+		caption: L('gui-programmable-speaker.volume')
+	});
+
+	gui.volumeSlider = volumePanel.add({
+		type: 'slider',
+		minimum_value: 0,
+		maximum_value: 100
+	} as SliderGuiElementData);
+
+	(gui.volumeSlider.style as LuaStyle).horizontally_stretchable = true;
+
+	const circuitNetworkPanel = GuiToolkit.labelledPanel({
+		parent: mainContent!,
+		line: true,
+		caption: L('gui-programmable-speaker.circuit-connection-settings'),
+		captionStyle: 'bold_label',
+		direction: 'vertical'
+	}).content
+
+	gui.enabledConditionSelect = CircuitConditionSelectElement.create(circuitNetworkPanel);
+
+	// Sound select panel
+	const soundSelectPanel = GuiToolkit.panel({
+		parent: circuitNetworkPanel,
+		direction: 'horizontal'
+	}).content
+
+	gui.categorySelect = soundSelectPanel.add({
+		type: 'drop-down',
+		items: sounds.map(category => L(`musical-speaker-category.${category.name}`))
+	} as DropDownGuiElementData);
+
+	gui.instrumentSelect = soundSelectPanel.add({
+		type: 'drop-down',
+	});
+
+	gui.noteSelect = soundSelectPanel.add({
+		type: 'drop-down',
+	});
+
+	return gui;
+}
+
+export function updateNoteSelectOptions(gui: Gui) {
+	const selectedCategory = sounds[gui.categorySelect.selected_index - 1] || sounds[0];
+	const selectedInstrument = selectedCategory.instruments[gui.instrumentSelect.selected_index - 1] || selectedCategory.instruments[0];
+
+	gui.instrumentSelect.items = selectedCategory.instruments
+		.map(instrument => L(`musical-speaker-instrument.${instrument.name}`));
+	gui.noteSelect.items = selectedInstrument.notes
+		.map(note => L(`musical-speaker-note.${note.name}`));
+}
+
+function writeSettingsToSpeaker(gui: Gui) {
+	if (!gui.speaker) {
+		throw new Error("Tried to write to nothing!");
 	}
 
-	private window: LuaGuiElement;
-	private preview: LuaGuiElement;
-	private volumeSlider: LuaGuiElement;
-	private enabledConditionSelect: CircuitConditionSelectElement;
-	private categorySelect: LuaGuiElement;
-	private instrumentSelect: LuaGuiElement;
-	private noteSelect: LuaGuiElement;
-	private speaker: MusicalSpeaker | undefined;
-	private player: LuaPlayer;
+	MusicalSpeaker.setSettings(gui.speaker, {
+		volume: gui.volumeSlider.slider_value,
+		enabledCondition: {
+			first_signal: gui.enabledConditionSelect.firstSignalChooser.elem_value as (SignalID | undefined)
+		},
+		categoryId: gui.categorySelect.selected_index - 1,
+		instrumentId: gui.instrumentSelect.selected_index - 1,
+		noteId: gui.noteSelect.selected_index - 1
+	});
+}
 
-	constructor(player: LuaPlayer) {
-		this.player = player;
-
-		const { element, mainContent } = GuiToolkit.window({
-			parent: player.gui.screen,
-			caption: L('entity-name.musical-speaker')
-		});
-
-		this.window = element;
-
-		const previewPanel = GuiToolkit.panel({
-			parent: mainContent!,
-			//style: 'bordered_frame'
-		}).content;
-
-		(previewPanel.style as LuaStyle).horizontal_align = 'center';
-		(previewPanel.style as LuaStyle).vertical_align = 'center';
-
-		this.preview = previewPanel.add({
-			type: 'entity-preview'
-		});
-
-		(this.preview.style as LuaStyle).width = 400;
-		(this.preview.style as LuaStyle).height = 149;
-
-		const volumePanel = GuiToolkit.panel({
-			parent: mainContent!,
-			direction: "horizontal"
-		}).content;
-
-		volumePanel.add({
-			type: "label",
-			caption: L('gui-programmable-speaker.volume')
-		});
-
-		this.volumeSlider = volumePanel.add({
-			type: 'slider',
-			minimum_value: 0,
-			maximum_value: 100
-		} as SliderGuiElementData);
-
-		(this.volumeSlider.style as LuaStyle).horizontally_stretchable = true;
-
-		const circuitNetworkPanel = GuiToolkit.labelledPanel({
-			parent: mainContent!,
-			line: true,
-			caption: L('gui-programmable-speaker.circuit-connection-settings'),
-			captionStyle: 'bold_label',
-			direction: 'vertical'
-		}).content
-	
-		this.enabledConditionSelect = new CircuitConditionSelectElement(circuitNetworkPanel);
-	
-		// Sound select panel
-		const soundSelectPanel = GuiToolkit.panel({
-			parent: circuitNetworkPanel,
-			direction: 'horizontal'
-		}).content
-	
-		this.categorySelect = soundSelectPanel.add({
-			type: 'drop-down',
-			items: sounds.map(category => L(`musical-speaker-category.${category.name}`))
-		} as DropDownGuiElementData)
-	
-		this.instrumentSelect = soundSelectPanel.add({
-			type: 'drop-down',
-		})
-	
-		this.noteSelect = soundSelectPanel.add({
-			type: 'drop-down',
-		})
+function readSettingsFromSpeaker(gui: Gui) {
+	if (!gui.speaker) {
+		throw new Error("Tried to open a null speaker!");
 	}
 
-	get visible() {
-		return this.window.visible;
-	}
+	const settings = MusicalSpeaker.getSettings(gui.speaker);
 
-	get index() {
-		return this.window.index;
-	}
+	updateNoteSelectOptions(gui);
 
-	updateNoteSelectOptions() {
-		const selectedCategory = sounds[this.categorySelect.selected_index - 1];
-		const selectedInstrument = selectedCategory.instruments[this.instrumentSelect.selected_index - 1];
+	gui.volumeSlider.slider_value = settings.volume;
+	gui.enabledConditionSelect.firstSignalChooser.elem_value = settings.enabledCondition.first_signal;
+	gui.categorySelect.selected_index = settings.categoryId + 1;
+	gui.instrumentSelect.selected_index = settings.instrumentId + 1;
+	gui.noteSelect.selected_index = settings.noteId + 1;
+}
 
-		this.instrumentSelect.items = selectedCategory.instruments
-			.map(instrument => L(`musical-speaker-instrument.${instrument.name}`));
-		this.noteSelect.items = selectedInstrument.notes
-			.map(note => L(`musical-speaker-note.${note.name}`));
-	}
+export function open(gui: Gui, speaker: MusicalSpeaker.Type) {
+	gui.speaker = speaker;
 
-	private writeSettingsToSpeaker() {
-		if (!this.speaker) {
-			throw new Error("Tried to write to nothing!");
-		}
+	readSettingsFromSpeaker(gui);
 
-		this.speaker.settings = {
-			volume: this.volumeSlider.slider_value,
-			enabledCondition: {
-				first_signal: this.enabledConditionSelect.firstSignalChooser.elem_value as (SignalID | undefined)
-			},
-			categoryId: this.categorySelect.selected_index - 1,
-			instrumentId: this.instrumentSelect.selected_index - 1,
-			noteId: this.noteSelect.selected_index - 1
-		};
-	}
+	gui.preview.entity = speaker.combinator;
+	gui.window.visible = true;
+	gui.player.opened = gui.window;
+}
 
-	private readSettingsFromSpeaker() {
-		if (!this.speaker) {
-			throw new Error("Tried to open a null speaker!");
-		}
+export function close(gui: Gui) {
+	gui.speaker = undefined;
+	gui.preview.entity = undefined;
+	gui.window.visible = false;
+}
 
-		const settings = this.speaker.settings;
+export function destroy(gui: Gui) {
+	gui.window.destroy();
+}
 
-		this.volumeSlider.slider_value = settings.volume == -1 ? 100 : settings.volume;
-		this.enabledConditionSelect.firstSignalChooser.elem_value = settings.enabledCondition.first_signal;
-		this.categorySelect.selected_index = settings.categoryId + 1;
-		this.instrumentSelect.selected_index = settings.instrumentId + 1;
-		this.noteSelect.selected_index = settings.noteId + 1;
-	}
+function onEntitySelectChanged(gui:Gui, args: on_gui_elem_changed) {
+	// For now, just blind save
+	writeSettingsToSpeaker(gui);
+}
 
-	open(speaker: MusicalSpeaker) {
-		this.speaker = speaker;
+function onSliderValueChanged(gui:Gui, args: on_gui_value_changed) {
+	// For now, just blind save
+	writeSettingsToSpeaker(gui);
+}
 
-		this.readSettingsFromSpeaker();
+function onSelectionChanged(gui:Gui, args: on_gui_selection_state_changed) {
+	// For now, just blind save
+	writeSettingsToSpeaker(gui);
 
-		this.preview.entity = speaker.entity;
-		this.window.visible = true;
-		this.player.opened = this.window;
-	}
-
-	close() {
-		this.speaker = undefined;
-		this.preview.entity = undefined;
-		this.window.visible = false;
-	}
-
-	destroy() {
-		this.window.destroy();
-	}
-
-	onEntitySelectChanged(args: on_gui_elem_changed) {
-		// For now, just blind save
-		this.writeSettingsToSpeaker();
-	}
-
-	onSliderValueChanged(args: on_gui_value_changed) {
-		// For now, just blind save
-		this.writeSettingsToSpeaker();
-	}
-
-	onSelectionChanged(args: on_gui_selection_state_changed) {
-		// For now, just blind save
-		this.writeSettingsToSpeaker();
-
-		if (args.element.index === this.noteSelect.index) {
-			const note = sounds[this.categorySelect.selected_index - 1]
-				.instruments[this.instrumentSelect.selected_index - 1]
-				.notes[this.noteSelect.selected_index - 1];
-			
-			if (note && note.filename) {
-				this.player.play_sound({
-					path: note.filename
-				});
-			}
+	if (args.element.index === gui.noteSelect.index) {
+		const note = sounds[gui.categorySelect.selected_index - 1]
+			.instruments[gui.instrumentSelect.selected_index - 1]
+			.notes[gui.noteSelect.selected_index - 1];
+		
+		if (note && note.filename) {
+			// gui.player.play_sound({
+			// 	path: note.filename
+			// });
 		}
 	}
 }
 
 function onPlayerLeave(args: on_player_left_game | on_player_removed | on_player_kicked) {
-	if (global.gui.has(args.player_index)) {
+	if (args.player_index in global.gui) {
 		const gui = global.gui.get(args.player_index);
 
 		if (gui) {
-			gui.destroy();
+			destroy(gui);
 		}
 
-		global.gui.delete(args.player_index);
+		global.gui.set(args.player_index, undefined);
 	}
 }
 
@@ -225,7 +224,7 @@ function onGuiOpened(args: on_gui_opened) {
 		let gui = global.gui.get(args.player_index);
 
 		if (!gui) {
-			gui = new Gui(player);
+			gui = create(player);
 			global.gui.set(args.player_index, gui);
 		}
 
@@ -234,7 +233,7 @@ function onGuiOpened(args: on_gui_opened) {
 		if (!speaker) {
 			player.print("That's not a musical speaker!");
 		} else {
-			gui.open(speaker);
+			open(gui, speaker);
 		}
 	}
 }
@@ -242,8 +241,8 @@ function onGuiOpened(args: on_gui_opened) {
 function onGuiClosed(args: on_gui_closed) {
 	if (args.gui_type == defines.gui_type.custom) {
 		callGui(args, gui => {
-			if (args.element && args.element.index == gui.index) {
-				gui.close();
+			if (args.element && args.element.index == gui.window.index) {
+				close(gui);
 			}
 		});
 	}
@@ -251,19 +250,19 @@ function onGuiClosed(args: on_gui_closed) {
 
 function callGui<T extends {player_index: number} >(args: T, func: (gui: Gui, args: T) => void) {
 	const gui = global.gui.get(args.player_index);
-	if (gui && gui.visible) {
+	if (gui && gui.window.visible) {
 		func(gui, args);
 	}
 }
 
 function handleSliderChanged(args: on_gui_value_changed) {
-	callGui(args, gui => gui.onSliderValueChanged(args));
+	callGui(args, onSliderValueChanged);
 }
 
 function handleChooseElementChanged(args: on_gui_elem_changed) {
-	callGui(args, gui => gui.onEntitySelectChanged(args));
+	callGui(args, onEntitySelectChanged);
 }
 
 function handleDropdownChanged(args: on_gui_selection_state_changed) {
-	callGui(args, gui => gui.onSelectionChanged(args));
+	callGui(args, onSelectionChanged);
 }

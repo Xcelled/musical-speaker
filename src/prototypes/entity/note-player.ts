@@ -15,7 +15,7 @@ function makeNotePlayer(instrument: InstrumentSpec, note: NoteSpec): PrototypePo
 		icon_size: 64,
 		icon_mipmaps: 4,
 		flags: ['not-on-map', 'hidden', 'not-flammable', 'no-copy-paste', 'not-deconstructable'],
-		collision_box: {},
+		collision_box: undefined,
 		working_sound: {
 			sound: {
 				filename: note.filename,
@@ -29,13 +29,13 @@ function makeNotePlayer(instrument: InstrumentSpec, note: NoteSpec): PrototypePo
 		circuit_wire_connection_point: emptyWires,
 		left_wire_connection_point: emptyWires,
 		right_wire_connection_point: emptyWires,
-		led_off: util.emptySprite(),
-		led_on: util.emptySprite(),
-		overlay_loop: util.emptySprite(),
-		overlay_start: util.emptySprite(),
+		led_off: util.empty_sprite(),
+		led_on: util.empty_sprite(),
+		overlay_loop: util.empty_sprite(),
+		overlay_start: util.empty_sprite(),
 		overlay_start_delay: 0,
-		power_on_animation: util.emptySprite()
-	};
+		power_on_animation: util.empty_sprite()
+	} as PrototypePowerSwitch;
 }
 
 const entities: PrototypeEntity[] = [];

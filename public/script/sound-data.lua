@@ -5,7 +5,7 @@ return {
 		name = "Piano",
 		instruments = {
 			{
-				instrument = "yamaha-grand-piano",
+				name = "yamaha-grand-piano",
 				notes = {
 					{ name="A0", filename = "__musical-speaker__/sound/yamaha-grand-piano/a-0.ogg" },
 					{ name="A#0", filename = "__musical-speaker__/sound/yamaha-grand-piano/a-sharp-0.ogg" },

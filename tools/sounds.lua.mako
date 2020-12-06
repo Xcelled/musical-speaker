@@ -23,7 +23,7 @@ return {
 		instruments = {
 			% for inst_dump in inst_dumps:
 			{
-				instrument = "${inst_dump.inst_code}",
+				name = "${inst_dump.inst_code}",
 				notes = {
 					% for note, note_name, path in inst_dump.notes:
 					{ name="${note_name}", filename = "${ relativize(path, output_dir) }" },

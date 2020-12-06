@@ -1,12 +1,12 @@
-import MusicalSpeaker from './script/musical-speaker';
-import Gui from './script/gui/gui';
+import * as MusicalSpeaker from './script/musical-speaker';
+import * as Gui from './script/gui/gui';
 
 import * as Event from '__stdlib__/stdlib/event/event';
 
 declare global {
 	interface GlobalType {
-		speakers: Map<number, MusicalSpeaker>;
-		gui: Map<number, Gui>;
+		speakers: Table<number, MusicalSpeaker.Type>;
+		gui: Table<number, Gui.Type>;
 	}
 }
 
@@ -16,14 +16,14 @@ Gui.registerEvents();
 Event.on_init(() => {
 	log('*************** frobbles')
 
-	global.speakers = new Map();
-	global.gui = new Map();
+	global.speakers = new Table() as any;
+	global.gui = new Table() as any;
 });
 
 Event.on_configuration_changed(() => {
-	for (const speaker of global.speakers.values()) {
+	for (const speaker of global.speakers as IterTable<MusicalSpeaker.Type>) {
 		if (speaker) {
-			speaker.initialize();
+			MusicalSpeaker.initialize(speaker);
 		}
 	}
 });

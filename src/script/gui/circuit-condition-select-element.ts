@@ -1,4 +1,3 @@
-import guiToolkit from './gui-toolkit';
 import GuiToolkit from './gui-toolkit';
 import * as util from 'util';
 
@@ -21,78 +20,85 @@ interface CircuitConditionSettings {
 	secondSignal: SignalID | number | undefined;
 }
 
-export default class CircuitConditionSelectElement{
+interface CircuitConditionSelectElement {
 	firstSignalChooser: LuaGuiElement;
 	comparatorChooser: LuaGuiElement;
 	secondConstantButton: LuaGuiElement;
 	secondSignalChooser: LuaGuiElement;
+}
 
-	constructor(parent: LuaGuiElement) {
-		const panel = GuiToolkit.labelledPanel({
-			parent,
-			caption: ['gui-control-behavior-modes-guis.enabled-condition'] as LocalisedString
-		}).content;
+export type Type = CircuitConditionSelectElement;
 
-		(panel.style as LuaStyle).vertical_align = 'center';
+export function create(parent: LuaGuiElement): CircuitConditionSelectElement {
+	let element: Partial<CircuitConditionSelectElement> = {}
 
-		this.firstSignalChooser = panel.add({
-			type: 'choose-elem-button',
-			elem_type: 'signal'
-		} as ChooseElemButtonGuiElementData);
+	const panel = GuiToolkit.labelledPanel({
+		parent,
+		caption: ['gui-control-behavior-modes-guis.enabled-condition'] as LocalisedString
+	}).content;
 
-		this.comparatorChooser = panel.add({
-			type: 'drop-down',
-			items: comparatorStrings,
-			selected_index: 1,
-			style: 'circuit_condition_comparator_dropdown'
-		} as DropDownGuiElementData);
+	(panel.style as LuaStyle).vertical_align = 'center';
 
-		this.secondConstantButton = panel.add({
-			type: 'button',
-			style: (this.firstSignalChooser.style as LuaStyle).name,
-			caption: '0'
-		} as ButtonGuiElementData);
-		this.secondConstantButton.tags['value'] = 0;
-		(this.secondConstantButton.style as LuaStyle).font_color = { r: 255, g: 255, b: 255 };
+	element.firstSignalChooser = panel.add({
+		type: 'choose-elem-button',
+		elem_type: 'signal'
+	} as ChooseElemButtonGuiElementData);
 
-		this.secondSignalChooser = panel.add({
-			type: 'choose-elem-button',
-			elem_type: 'signal'
-		} as ChooseElemButtonGuiElementData);
+	element.comparatorChooser = panel.add({
+		type: 'drop-down',
+		items: comparatorStrings,
+		selected_index: 2,
+		style: 'circuit_condition_comparator_dropdown'
+	} as DropDownGuiElementData);
 
-		this.secondSignalChooser.visible = false;
+	element.secondConstantButton = panel.add({
+		type: 'button',
+		style: (element.firstSignalChooser.style as LuaStyle).name,
+		caption: '0'
+	} as ButtonGuiElementData);
+	element.secondConstantButton.tags['value'] = 0;
+	(element.secondConstantButton.style as LuaStyle).font_color = { r: 255, g: 255, b: 255 };
+
+	element.secondSignalChooser = panel.add({
+		type: 'choose-elem-button',
+		elem_type: 'signal'
+	} as ChooseElemButtonGuiElementData);
+
+	element.secondSignalChooser.visible = false;
+	element.firstSignalChooser.enabled = false;
+
+	return element as CircuitConditionSelectElement;
+}
+
+export function getSettings(element: CircuitConditionSelectElement): Readonly<CircuitConditionSettings> {
+
+	let secondSignal;
+
+	if (element.secondConstantButton.visible) {
+		secondSignal = element.secondConstantButton.tags['value'];
+	} else {
+		secondSignal = element.secondSignalChooser.elem_value as SignalID
 	}
 
-	get settings(): Readonly<CircuitConditionSettings> {
+	return {
+		firstSignal: element.firstSignalChooser.elem_value as SignalID,
+		comparator: element.comparatorChooser.selected_index,
+		secondSignal
+	};
+}
 
-		let secondSignal;
+export function setSettings(element: CircuitConditionSelectElement, newValue: Readonly<CircuitConditionSettings>) {
+	element.firstSignalChooser.elem_value = newValue.firstSignal;
+	element.comparatorChooser.selected_index = newValue.comparator
 
-		if (this.secondConstantButton.visible) {
-			secondSignal = this.secondConstantButton.tags['value'];
-		} else {
-			secondSignal = this.secondSignalChooser.elem_value as SignalID
-		}
-
-		return {
-			firstSignal: this.firstSignalChooser.elem_value as SignalID,
-			comparator: this.comparatorChooser.selected_index,
-			secondSignal
-		};
-	}
-
-	set settings(newValue: Readonly<CircuitConditionSettings>) {
-		this.firstSignalChooser.elem_value = newValue.firstSignal;
-		this.comparatorChooser.selected_index = newValue.comparator
-
-		if (typeof newValue.secondSignal === 'number') {
-			this.secondConstantButton.caption = util.format_number(newValue.secondSignal, true)
-			this.secondConstantButton.tags['value'] = newValue.secondSignal;
-			this.secondConstantButton.visible = true;
-			this.secondSignalChooser.visible = false;
-		} else {
-			this.secondSignalChooser.elem_value = newValue.secondSignal;
-			this.secondConstantButton.visible = false;
-			this.secondSignalChooser.visible = true
-		}
+	if (typeof newValue.secondSignal === 'number') {
+		element.secondConstantButton.caption = util.format_number(newValue.secondSignal, true)
+		element.secondConstantButton.tags['value'] = newValue.secondSignal;
+		element.secondConstantButton.visible = true;
+		element.secondSignalChooser.visible = false;
+	} else {
+		element.secondSignalChooser.elem_value = newValue.secondSignal;
+		element.secondConstantButton.visible = false;
+		element.secondSignalChooser.visible = true
 	}
 }
