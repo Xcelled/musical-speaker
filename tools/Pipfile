@@ -10,6 +10,7 @@ pysoundfile = "*"
 mido = "*"
 tqdm = "*"
 mako = "*"
+pydub = "*"
 
 [dev-packages]
 

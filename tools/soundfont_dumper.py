@@ -68,10 +68,12 @@ def dump_note(instrument: Instrument, soundfont, outdir: Path, sample_len, note:
 		midi = write_midi(instrument, note, sample_len, velocity)
 		flac_file = tempfile.mktemp()
 		LOG.debug("Writing flac file to %s", flac_file)
-		subprocess.check_output(['fluidsynth', '-qni', '-C', 'no', '-R', 'no', '-a', 'alsa', '-g', '2', '-T', 'flac', '-F', flac_file, soundfont, midi])
+		subprocess.check_output(['fluidsynth', '-qni', '-C', 'no', '-R', 'no', '-a', 'alsa', '-g', '5', '-T', 'flac', '-F', flac_file, soundfont, midi])
 
 		if not os.path.exists(flac_file):
 			raise Exception('FLAC file was never written!')
+
+		
 
 		ogg = outdir.joinpath(f'{note.pitch.name.lower().replace("_", "-")}-{note.octave}.ogg')
 
@@ -104,9 +106,9 @@ def write_midi(instrument: Instrument, note: Note, sample_len, velocity):
 
 	track.extend([
 		mido.Message('program_change', channel=channel, program=instrument.program),
-		mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(100)),
+		mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(120)),
 		mido.Message('note_on', channel=channel, note=note.to_midi(), velocity=velocity),
-		mido.Message('note_off', channel=channel, note=note.to_midi(), time=int(mido.second2tick(sample_len, midi.ticks_per_beat, mido.bpm2tempo(100))))
+		mido.Message('note_off', channel=channel, note=note.to_midi(), time=int(mido.second2tick(sample_len, midi.ticks_per_beat, mido.bpm2tempo(120))))
 	])
 	midi_file = tempfile.mktemp()
 	midi.save(midi_file)

@@ -65,7 +65,9 @@ export function create(parent: LuaGuiElement): CircuitConditionSelectElement {
 	} as ChooseElemButtonGuiElementData);
 
 	element.secondSignalChooser.visible = false;
-	element.firstSignalChooser.enabled = false;
+
+	element.comparatorChooser.enabled = false;
+	element.secondSignalChooser.enabled = false;
 
 	return element as CircuitConditionSelectElement;
 }

@@ -6,6 +6,7 @@ import * as Event from '__stdlib__/stdlib/event/event';
 declare global {
 	interface GlobalType {
 		speakers: Table<number, MusicalSpeaker.Type>;
+		circuitControlledSpeakers: Table<number, MusicalSpeaker.Type>
 		gui: Table<number, Gui.Type>;
 	}
 }
@@ -17,11 +18,12 @@ Event.on_init(() => {
 	log('*************** frobbles')
 
 	global.speakers = new Table() as any;
+	global.circuitControlledSpeakers = new Table() as any;
 	global.gui = new Table() as any;
 });
 
 Event.on_configuration_changed(() => {
-	for (const speaker of global.speakers as IterTable<MusicalSpeaker.Type>) {
+	for (const speaker of global.speakers) {
 		if (speaker) {
 			MusicalSpeaker.initialize(speaker);
 		}

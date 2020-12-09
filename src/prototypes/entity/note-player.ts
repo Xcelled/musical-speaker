@@ -7,10 +7,14 @@ const emptyWires: WireConnectionPoint = {
 	shadow: {}
 };
 
-function makeNotePlayer(instrument: InstrumentSpec, note: NoteSpec): PrototypePowerSwitch {
-	return {
+const existing = data.raw['power-switch']['power-switch'] as PrototypePowerSwitch;
+
+const debug = true;
+
+function makeNotePlayer(instrument: InstrumentSpec, note: NoteSpec, volume: number): PrototypePowerSwitch {
+	const speakerSpecific = {
 		type: 'power-switch',
-		name: `musical-speaker-note-player-${instrument.name}-${note.name}`,
+		name: `musical-speaker-note-player-${instrument.name}-${note.name}-${volume}`,
 		icon: '__base__/graphics/icons/programmable-speaker.png',
 		icon_size: 64,
 		icon_mipmaps: 4,
@@ -20,12 +24,17 @@ function makeNotePlayer(instrument: InstrumentSpec, note: NoteSpec): PrototypePo
 			sound: {
 				filename: note.filename,
 				preload: false,
-				audible_distance_modifer: 1e99
-			}
+				audible_distance_modifier: 1000,
+				volume: volume / 100.0
+			},
+			match_progress_to_activity: true,
+			use_doppler_shift: false
 		},
 
-		wire_max_distance: 5,
+		wire_max_distance: debug ? 1000 : 0,
+	};
 
+	const nullBase = {
 		circuit_wire_connection_point: emptyWires,
 		left_wire_connection_point: emptyWires,
 		right_wire_connection_point: emptyWires,
@@ -35,6 +44,11 @@ function makeNotePlayer(instrument: InstrumentSpec, note: NoteSpec): PrototypePo
 		overlay_start: util.empty_sprite(),
 		overlay_start_delay: 0,
 		power_on_animation: util.empty_sprite()
+	}
+
+	return {
+		...(debug ? existing : nullBase),
+		...speakerSpecific
 	} as PrototypePowerSwitch;
 }
 
@@ -43,7 +57,9 @@ const entities: PrototypeEntity[] = [];
 for (const category of sounds) {
 	for (const instrument of category.instruments) {
 		for (const note of instrument.notes) {
-			entities.push(makeNotePlayer(instrument, note));
+			for (let i = 0; i <= 100; i += 5) {
+				entities.push(makeNotePlayer(instrument, note, i));
+			}
 		}
 	}
 }

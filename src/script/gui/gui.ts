@@ -12,15 +12,18 @@ function L(str: string, ...formatArgs: /** @vararg */ string[]) {
 const EventType = defines.events;
 
 interface Gui {
+	speaker: MusicalSpeaker.Type | undefined;
+	player: LuaPlayer;
+
 	window: LuaGuiElement;
+	closeButton: LuaGuiElement;
 	preview: LuaGuiElement;
 	volumeSlider: LuaGuiElement;
 	enabledConditionSelect: CircuitConditionSelectElement.Type;
 	categorySelect: LuaGuiElement;
 	instrumentSelect: LuaGuiElement;
 	noteSelect: LuaGuiElement;
-	speaker: MusicalSpeaker.Type | undefined;
-	player: LuaPlayer;
+	volumeControlSelect: LuaGuiElement;
 }
 
 export type Type = Gui;
@@ -34,23 +37,34 @@ export function registerEvents() {
 	);
 
 	Events.register([EventType.on_gui_opened], onGuiOpened);
-	Events.register([EventType.on_gui_closed], onGuiClosed);
+	Events.register([EventType.on_gui_closed], passToGui(onGuiClosed));
 
-	Events.register([EventType.on_gui_value_changed], handleSliderChanged);
-	Events.register([EventType.on_gui_elem_changed], handleChooseElementChanged);
-	Events.register([EventType.on_gui_selection_state_changed], handleDropdownChanged);
+	Events.register([EventType.on_gui_value_changed], passToGui(onSliderValueChanged));
+	Events.register([EventType.on_gui_elem_changed], passToGui(onEntitySelectChanged));
+	Events.register([EventType.on_gui_selection_state_changed], passToGui(onSelectionChanged));
+	Events.register([EventType.on_gui_click], passToGui(onClick));
+}
+
+function passToGui<T extends {player_index: number}>(guiHandler: (gui: Gui, args: T) => void) {
+	return function (args: T) {
+		const gui = global.gui.get(args.player_index);
+		if (gui && gui.window.visible) {
+			guiHandler(gui, args);
+		}
+	}
 }
 
 export function create(player: LuaPlayer): Gui {
-	let gui: any = {};
+	let gui: Partial<Gui> = {};
 	gui.player = player;
 
-	const { element, mainContent } = GuiToolkit.window({
+	const { element, closeButton, mainContent } = GuiToolkit.window({
 		parent: player.gui.screen,
 		caption: L('entity-name.musical-speaker')
 	});
 
 	gui.window = element;
+	gui.closeButton = closeButton;
 
 	const previewPanel = GuiToolkit.panel({
 		parent: mainContent!,
@@ -79,7 +93,7 @@ export function create(player: LuaPlayer): Gui {
 
 	gui.volumeSlider = volumePanel.add({
 		type: 'slider',
-		minimum_value: 0,
+		minimum_value: 1,
 		maximum_value: 100
 	} as SliderGuiElementData);
 
@@ -114,7 +128,17 @@ export function create(player: LuaPlayer): Gui {
 		type: 'drop-down',
 	});
 
-	return gui;
+	const volumeFromCircuitPanel = GuiToolkit.labelledPanel({
+		parent: circuitNetworkPanel,
+		caption: L('musical-speaker.volume-control-condition')
+	}).content;
+
+	gui.volumeControlSelect = volumeFromCircuitPanel.add({
+		type: 'choose-elem-button',
+		elem_type: 'signal'
+	} as ChooseElemButtonGuiElementData);
+
+	return gui as Gui;
 }
 
 export function updateNoteSelectOptions(gui: Gui) {
@@ -139,7 +163,8 @@ function writeSettingsToSpeaker(gui: Gui) {
 		},
 		categoryId: gui.categorySelect.selected_index - 1,
 		instrumentId: gui.instrumentSelect.selected_index - 1,
-		noteId: gui.noteSelect.selected_index - 1
+		noteId: gui.noteSelect.selected_index - 1,
+		volumeControlSignal: gui.volumeControlSelect.elem_value as (SignalID | undefined)
 	});
 }
 
@@ -157,6 +182,7 @@ function readSettingsFromSpeaker(gui: Gui) {
 	gui.categorySelect.selected_index = settings.categoryId + 1;
 	gui.instrumentSelect.selected_index = settings.instrumentId + 1;
 	gui.noteSelect.selected_index = settings.noteId + 1;
+	gui.volumeControlSelect.elem_value = settings.volumeControlSignal;
 }
 
 export function open(gui: Gui, speaker: MusicalSpeaker.Type) {
@@ -173,10 +199,20 @@ export function close(gui: Gui) {
 	gui.speaker = undefined;
 	gui.preview.entity = undefined;
 	gui.window.visible = false;
+
+	if (gui.player.opened_gui_type == defines.gui_type.custom) {
+		gui.player.opened = null;
+	}
 }
 
 export function destroy(gui: Gui) {
 	gui.window.destroy();
+}
+
+function onClick(gui: Gui, args: on_gui_click) {
+	if (args.element.index == gui.closeButton.index) {
+		close(gui);
+	}
 }
 
 function onEntitySelectChanged(gui:Gui, args: on_gui_elem_changed) {
@@ -238,31 +274,10 @@ function onGuiOpened(args: on_gui_opened) {
 	}
 }
 
-function onGuiClosed(args: on_gui_closed) {
+function onGuiClosed(gui: Gui, args: on_gui_closed) {
 	if (args.gui_type == defines.gui_type.custom) {
-		callGui(args, gui => {
-			if (args.element && args.element.index == gui.window.index) {
-				close(gui);
-			}
-		});
+		if (args.element && args.element.index == gui.window.index) {
+			close(gui);
+		}
 	}
-}
-
-function callGui<T extends {player_index: number} >(args: T, func: (gui: Gui, args: T) => void) {
-	const gui = global.gui.get(args.player_index);
-	if (gui && gui.window.visible) {
-		func(gui, args);
-	}
-}
-
-function handleSliderChanged(args: on_gui_value_changed) {
-	callGui(args, onSliderValueChanged);
-}
-
-function handleChooseElementChanged(args: on_gui_elem_changed) {
-	callGui(args, onEntitySelectChanged);
-}
-
-function handleDropdownChanged(args: on_gui_selection_state_changed) {
-	callGui(args, onSelectionChanged);
 }

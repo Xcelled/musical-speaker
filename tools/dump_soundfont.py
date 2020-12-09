@@ -47,7 +47,7 @@ for inst in tqdm(instruments, desc='Dumping instruments', unit='instrument'):
 
 	inst_dir = sound_dir.joinpath(inst_code)
 	inst_dir.mkdir(parents=True, exist_ok=True)
-	length = 0.45 if is_percussion else 0.45
+	length = 10
 	velocity = 127 if is_percussion else 64
 	n = percussion_notes if is_percussion else notes
 	note_dumps = dump_inst(inst, default_soundfont, inst_dir, length, n, velocity)
