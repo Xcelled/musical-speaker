@@ -3,7 +3,7 @@ import * as Events from '__stdlib__/stdlib/event/event';
 import GuiToolkit from './gui-toolkit';
 import * as CircuitConditionSelectElement from './circuit-condition-select-element';
 import * as MusicalSpeaker from '../musical-speaker';
-import sounds from '../sounds';
+import { categories } from '../sounds';
 
 function L(str: string, ...formatArgs: /** @vararg */ string[]) {
 	return [str, ...formatArgs] as LocalisedString;
@@ -47,7 +47,7 @@ export function registerEvents() {
 
 function passToGui<T extends {player_index: number}>(guiHandler: (gui: Gui, args: T) => void) {
 	return function (args: T) {
-		const gui = global.gui.get(args.player_index);
+		const gui = global.gui[args.player_index];
 		if (gui && gui.window.visible) {
 			guiHandler(gui, args);
 		}
@@ -117,7 +117,7 @@ export function create(player: LuaPlayer): Gui {
 
 	gui.categorySelect = soundSelectPanel.add({
 		type: 'drop-down',
-		items: sounds.map(category => L(`musical-speaker-category.${category.name}`))
+		items: categories.map(category => L(`musical-speaker-category.${category.name}`))
 	} as DropDownGuiElementData);
 
 	gui.instrumentSelect = soundSelectPanel.add({
@@ -142,7 +142,7 @@ export function create(player: LuaPlayer): Gui {
 }
 
 export function updateNoteSelectOptions(gui: Gui) {
-	const selectedCategory = sounds[gui.categorySelect.selected_index - 1] || sounds[0];
+	const selectedCategory = categories[gui.categorySelect.selected_index - 1] || categories[0];
 	const selectedInstrument = selectedCategory.instruments[gui.instrumentSelect.selected_index - 1] || selectedCategory.instruments[0];
 
 	gui.instrumentSelect.items = selectedCategory.instruments
@@ -230,7 +230,7 @@ function onSelectionChanged(gui:Gui, args: on_gui_selection_state_changed) {
 	writeSettingsToSpeaker(gui);
 
 	if (args.element.index === gui.noteSelect.index) {
-		const note = sounds[gui.categorySelect.selected_index - 1]
+		const note = categories[gui.categorySelect.selected_index - 1]
 			.instruments[gui.instrumentSelect.selected_index - 1]
 			.notes[gui.noteSelect.selected_index - 1];
 		
@@ -244,27 +244,27 @@ function onSelectionChanged(gui:Gui, args: on_gui_selection_state_changed) {
 
 function onPlayerLeave(args: on_player_left_game | on_player_removed | on_player_kicked) {
 	if (args.player_index in global.gui) {
-		const gui = global.gui.get(args.player_index);
+		const gui = global.gui[args.player_index];
 
 		if (gui) {
 			destroy(gui);
 		}
 
-		global.gui.set(args.player_index, undefined);
+		global.gui[args.player_index] = undefined;
 	}
 }
 
 function onGuiOpened(args: on_gui_opened) {
 	if (args.entity && args.entity.name == 'musical-speaker') {
 		const player = game.players[args.player_index];
-		let gui = global.gui.get(args.player_index);
+		let gui = global.gui[args.player_index];
 
 		if (!gui) {
 			gui = create(player);
-			global.gui.set(args.player_index, gui);
+			global.gui[args.player_index] = gui;
 		}
 
-		const speaker = global.speakers.get(args.entity.unit_number!);
+		const speaker = global.speakers[args.entity.unit_number!];
 
 		if (!speaker) {
 			player.print("That's not a musical speaker!");

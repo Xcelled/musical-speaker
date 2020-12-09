@@ -1,4 +1,4 @@
-import sounds from './sounds';
+import { getProgrammableSpeakerInstrumentId } from './sounds';
 import * as Event from '__stdlib__/stdlib/event/event';
 
 /**
@@ -32,7 +32,8 @@ interface MusicalSpeakerSettings {
 
 interface MusicalSpeaker {
 	combinator: LuaEntity
-	notePlayers: Table<number, LuaEntity>
+	notePlayer?: LuaEntity,
+	isPlaying: boolean
 }
 
 export type Type = MusicalSpeaker;
@@ -46,16 +47,14 @@ export function registerEvents() {
 		[defines.events.script_raised_destroy, defines.events.on_entity_destroyed],
 		onDestroyed
 	);
-	Event.register(
-		[defines.events.on_tick],
-		checkCircuitSignals
-	);
+	Event.on_nth_tick(1, checkCircuitSignals);
 }
 
 export function create(combinator: LuaEntity): MusicalSpeaker {
 	const speaker: MusicalSpeaker = {
 		combinator,
-		notePlayers: new Table() as any,
+		notePlayer: undefined,
+		isPlaying: false
 	}
 
 	setSettings(speaker, {
@@ -112,110 +111,78 @@ export function setSettings(speaker: MusicalSpeaker, settings: MusicalSpeakerSet
 	
 	(speaker.combinator.get_or_create_control_behavior() as LuaConstantCombinatorControlBehavior).parameters = parameters;
 
-	const isExtraCircuitControlled = settings.volumeControlSignal && settings.volumeControlSignal.name;
-
-	if (isExtraCircuitControlled) {
-		global.circuitControlledSpeakers.set(speaker.combinator.unit_number!, speaker);
-	} else if (speaker.combinator.unit_number! in global.circuitControlledSpeakers) {
-		global.circuitControlledSpeakers.set(speaker.combinator.unit_number!, undefined);
-	}
-
 	// TODO: Skip this if we can
-	initialize(speaker);
-}
-
-function getSpeakerEntityName(settings: MusicalSpeakerSettings, volume: number) {
-	// TODO: How does this behave with bad indicies?
-
-	const category = sounds[settings.categoryId];
-	const instrument = category.instruments[settings.instrumentId];
-	const note = instrument.notes[settings.noteId];
-
-	return `musical-speaker-note-player-${instrument.name}-${note.name}-${volume}`;
+	reset(speaker);
 }
 
 /**
- * Destroys and recreates all note players
+ * Destroys and recreates note player
  */
-export function initialize(speaker: MusicalSpeaker) {
+export function reset(speaker: MusicalSpeaker) {
 	if (!speaker.combinator.valid) {
 		throw new Error("Lolwhat");
 	}
 
-	for (const existing of speaker.notePlayers as unknown as LuaEntity[]) {
-		if (existing.valid) {
-			game.print("Destroying " + existing.name)
-
-			if (!existing.destroy()) {
-				game.print("Uh oh");
-			}
-		} else {
-			game.print("hmmm");
-		}
+	if (speaker.notePlayer && speaker.notePlayer.valid) {
+		speaker.notePlayer.destroy();
 	}
-	
-	speaker.notePlayers = new Table() as any;
+
+	const notePlayer = speaker.combinator.surface.create_entity({
+		name: 'musical-speaker-note-player',
+		position: {
+			x: (speaker.combinator.position as PositionXY).x + 2,
+			y: (speaker.combinator.position as PositionXY).y + 1
+		}
+	});
+
+	if (!notePlayer) {
+		throw new Error("This should be impossible");
+	}
+
+	speaker.notePlayer = notePlayer;
+
+	notePlayer.connect_neighbour({
+		wire: defines.wire_type.red,
+		target_entity: speaker.combinator
+	});
+
+	notePlayer.connect_neighbour({
+		wire: defines.wire_type.green,
+		target_entity: speaker.combinator
+	});
 
 	const settings = getSettings(speaker);
 
-	for (let i = 5; i <= 100; i += 5) {
-		const notePlayer = speaker.combinator.surface.create_entity({
-			name: getSpeakerEntityName(settings, i),
-			position: {
-				x: (speaker.combinator.position as PositionXY).x+2,
-				y: (speaker.combinator.position as PositionXY).y + ((i / 5) + 1) * 2
-			}
-		});
+	const controlBehavior = notePlayer.get_or_create_control_behavior() as LuaProgrammableSpeakerControlBehavior;
 
-		if (!notePlayer) {
-			throw new Error("This should be impossible");
-		}
+	controlBehavior.circuit_condition = {
+		condition: settings.enabledCondition
+	};
 
-		(notePlayer.get_or_create_control_behavior() as LuaGenericOnOffControlBehavior).circuit_condition = {
-			condition: settings.enabledCondition
-		}
+	const programmableSpeakerInstrument = getProgrammableSpeakerInstrumentId(settings.categoryId, settings.instrumentId);
 
-		speaker.notePlayers.set(i / 5, notePlayer);
-	}
-
-	attachPlayerForVolume(speaker, settings.volume);
-}
-
-function attachPlayerForVolume(speaker: MusicalSpeaker, volume: number) {
-	const volumeStep = math.ceil(volume / 5) ;
-
-	for (const notePlayer of speaker.notePlayers as unknown as LuaEntity[]) {
-		notePlayer.disconnect_neighbour({
-				wire: defines.wire_type.red,
-				target_entity: speaker.combinator
-			});
-	}
-
-	const toConnect = speaker.notePlayers.get(volumeStep);
-
-	if (!toConnect) {
-		throw "Could not find a volume step for " + volume;
+	if (!programmableSpeakerInstrument) {
+		game.print(`Unknown instrument!`);
 	} else {
-		game.print("Attaching player for volume step " + volume + " " + toConnect.name);
-
-		const success = toConnect.connect_neighbour({
-			wire: defines.wire_type.red,
-			target_entity: speaker.combinator
-		});
-
-		if (!success) {
-			game.print("Unable to connect note player!")
+		game.print(`Setting notes: ${programmableSpeakerInstrument}, ${settings.noteId}`);
+		controlBehavior.circuit_parameters = {
+			signal_value_is_pitch: false,
+			note_id: settings.noteId,
+			instrument_id: programmableSpeakerInstrument
 		}
 	}
+
+	game.print(tostring((notePlayer.get_or_create_control_behavior() as LuaProgrammableSpeakerControlBehavior).circuit_parameters.note_id))
 }
 
 /**
- * Removes all entities associated with this combinator
+ * Removes all entities associated with this musical speaker
  */
 export function destroy(speaker: MusicalSpeaker) {
-	[...speaker.notePlayers, speaker.combinator]
-		.filter(e => e.valid)
-		.forEach(e => e.destroy());
+	[speaker.notePlayer, speaker.combinator]
+		.filter(e => e != undefined)
+		.filter(e => e!.valid)
+		.forEach(e => e!.destroy());
 }
 
 function onDestroyed(args: on_entity_destroyed) {
@@ -223,11 +190,11 @@ function onDestroyed(args: on_entity_destroyed) {
 		return;
 	}
 
-	const speaker = global.speakers.get(args.unit_number);
+	const speaker = global.speakers[args.unit_number];
 
 	if (speaker) {
 		destroy(speaker);
-		global.speakers.set(args.unit_number, undefined);
+		global.speakers[args.unit_number] = undefined;
 	}
 }
 
@@ -242,18 +209,39 @@ function onBuilt(args: on_built_entity | on_robot_built_entity | script_raised_b
 	}
 
 	if (entity.name === 'musical-speaker' && entity.unit_number) {
-		global.speakers.set(entity.unit_number, create(entity));
+		global.speakers[entity.unit_number] = create(entity);
 	}
 }
 
 function checkCircuitSignals(args: on_tick) {
-	for (const speaker of global.circuitControlledSpeakers) {
+	game.print("tick " + table_size(global.speakers));
+
+	for (const speakerId in global.speakers) {
+		const speaker = global.speakers[speakerId];
+
+		if (!speaker) {
+			continue;
+		}
+
 		const settings = getSettings(speaker);
 
 		if (settings.volumeControlSignal && settings.volumeControlSignal.name) {
 			const volume = speaker.combinator.get_merged_signal(settings.volumeControlSignal);
-			attachPlayerForVolume(speaker, volume);
 		}
 
+		if (speaker.notePlayer) {
+			const controlBehavior = speaker.notePlayer.get_control_behavior() as LuaProgrammableSpeakerControlBehavior;
+
+			if (controlBehavior) {
+				const currentlyPlaying = controlBehavior.circuit_condition.fulfilled;
+
+				if (currentlyPlaying) {
+					speaker.isPlaying = true
+				} else if (speaker.isPlaying) {
+					// We think the speaker is playing, but it's not - reset it
+					reset(speaker);				
+				}
+			}
+		}
 	}
 }

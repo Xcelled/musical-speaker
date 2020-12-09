@@ -5,9 +5,12 @@ import * as Event from '__stdlib__/stdlib/event/event';
 
 declare global {
 	interface GlobalType {
-		speakers: Table<number, MusicalSpeaker.Type>;
-		circuitControlledSpeakers: Table<number, MusicalSpeaker.Type>
-		gui: Table<number, Gui.Type>;
+		speakers: {
+			[key: number] : MusicalSpeaker.Type | undefined
+		};
+		gui: {
+			[key: number] : Gui.Type | undefined
+		}
 	}
 }
 
@@ -15,17 +18,16 @@ MusicalSpeaker.registerEvents();
 Gui.registerEvents();
 
 Event.on_init(() => {
-	log('*************** frobbles')
-
-	global.speakers = new Table() as any;
-	global.circuitControlledSpeakers = new Table() as any;
-	global.gui = new Table() as any;
+	global.speakers = {};
+	global.gui = {};
 });
 
 Event.on_configuration_changed(() => {
-	for (const speaker of global.speakers) {
+	for (const speakerId in global.speakers) {
+		const speaker = global.speakers[speakerId];
+
 		if (speaker) {
-			MusicalSpeaker.initialize(speaker);
+			MusicalSpeaker.reset(speaker);
 		}
 	}
 });

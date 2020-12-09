@@ -1,5 +1,4 @@
-import sounds from '../../script/sounds';
-import { InstrumentSpec, NoteSpec } from '../../script/sounds';
+import { programmableSpeakerInstruments } from '../../script/sounds';
 import * as util from 'util';
 
 const emptyWires: WireConnectionPoint = {
@@ -7,61 +6,36 @@ const emptyWires: WireConnectionPoint = {
 	shadow: {}
 };
 
-const existing = data.raw['power-switch']['power-switch'] as PrototypePowerSwitch;
+const baseSpeaker = data.raw['programmable-speaker']['programmable-speaker'] as PrototypeProgrammableSpeaker;
 
 const debug = true;
 
-function makeNotePlayer(instrument: InstrumentSpec, note: NoteSpec, volume: number): PrototypePowerSwitch {
-	const speakerSpecific = {
-		type: 'power-switch',
-		name: `musical-speaker-note-player-${instrument.name}-${note.name}-${volume}`,
-		icon: '__base__/graphics/icons/programmable-speaker.png',
-		icon_size: 64,
-		icon_mipmaps: 4,
-		flags: ['not-on-map', 'hidden', 'not-flammable', 'no-copy-paste', 'not-deconstructable'],
-		collision_box: undefined,
-		working_sound: {
-			sound: {
-				filename: note.filename,
-				preload: false,
-				audible_distance_modifier: 1000,
-				volume: volume / 100.0
-			},
-			match_progress_to_activity: true,
-			use_doppler_shift: false
-		},
+let notePlayer = table.deepcopy(baseSpeaker);
 
-		wire_max_distance: debug ? 1000 : 0,
-	};
+notePlayer.name = 'musical-speaker-note-player';
+notePlayer.minable = undefined;
+notePlayer.flags = ['not-on-map', 'hidden', 'not-flammable', 'no-copy-paste', 'not-deconstructable'];
+notePlayer.collision_box = undefined;
+notePlayer.energy_source = {
+	type: 'void'
+};
 
-	const nullBase = {
-		circuit_wire_connection_point: emptyWires,
-		left_wire_connection_point: emptyWires,
-		right_wire_connection_point: emptyWires,
-		led_off: util.empty_sprite(),
-		led_on: util.empty_sprite(),
-		overlay_loop: util.empty_sprite(),
-		overlay_start: util.empty_sprite(),
-		overlay_start_delay: 0,
-		power_on_animation: util.empty_sprite()
-	}
 
-	return {
-		...(debug ? existing : nullBase),
-		...speakerSpecific
-	} as PrototypePowerSwitch;
-}
 
-const entities: PrototypeEntity[] = [];
+notePlayer.instruments = programmableSpeakerInstruments as any;
 
-for (const category of sounds) {
-	for (const instrument of category.instruments) {
-		for (const note of instrument.notes) {
-			for (let i = 0; i <= 100; i += 5) {
-				entities.push(makeNotePlayer(instrument, note, i));
-			}
+if (!debug) {
+	notePlayer = {
+		...notePlayer,
+		...{
+			circuit_wire_connection_point: emptyWires,
+			sprite: util.empty_sprite(),
+			circuit_connector_sprites: undefined,
+			draw_circuit_wires: false,
+			draw_copper_wires: false,
+			selectable_in_game: false
 		}
-	}
+	};
 }
 
-data.extend(entities);
+data.extend([notePlayer]);
