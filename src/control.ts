@@ -4,12 +4,24 @@ import * as Gui from './script/gui/gui';
 import * as Event from '__stdlib__/stdlib/event/event';
 
 declare global {
-	interface GlobalType {
+	interface Globals {
 		speakers: {
 			[key: number] : MusicalSpeaker.Type | undefined
 		};
 		gui: {
 			[key: number] : Gui.Type | undefined
+		},
+
+		speakerTemplates: {
+			stores: {
+				[key: number]: LuaEntity
+			},
+
+			currentStore: LuaEntity | undefined,
+	
+			templates: {
+				[key: string]: LuaItemStack
+			},
 		}
 	}
 }
@@ -20,6 +32,11 @@ Gui.registerEvents();
 Event.on_init(() => {
 	global.speakers = {};
 	global.gui = {};
+	global.speakerTemplates = {
+		stores: {},
+		currentStore: undefined,
+		templates: {}
+	};
 });
 
 Event.on_configuration_changed(() => {

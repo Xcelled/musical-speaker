@@ -153,7 +153,7 @@ export function updateNoteSelectOptions(gui: Gui) {
 
 function writeSettingsToSpeaker(gui: Gui) {
 	if (!gui.speaker) {
-		throw new Error("Tried to write to nothing!");
+		throw "Tried to write to nothing!";
 	}
 
 	MusicalSpeaker.setSettings(gui.speaker, {
@@ -170,7 +170,7 @@ function writeSettingsToSpeaker(gui: Gui) {
 
 function readSettingsFromSpeaker(gui: Gui) {
 	if (!gui.speaker) {
-		throw new Error("Tried to open a null speaker!");
+		throw "Tried to open a null speaker!";
 	}
 
 	const settings = MusicalSpeaker.getSettings(gui.speaker);

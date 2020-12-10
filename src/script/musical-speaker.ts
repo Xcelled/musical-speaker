@@ -1,5 +1,8 @@
 import { getProgrammableSpeakerInstrumentId } from './sounds';
+import { getTemplate } from './templates';
 import * as Event from '__stdlib__/stdlib/event/event';
+
+import { position } from 'math2d';
 
 /**
  * 1 based cause these are fed directly to the lua API
@@ -120,23 +123,34 @@ export function setSettings(speaker: MusicalSpeaker, settings: MusicalSpeakerSet
  */
 export function reset(speaker: MusicalSpeaker) {
 	if (!speaker.combinator.valid) {
-		throw new Error("Lolwhat");
+		throw "Lolwhat";
 	}
 
 	if (speaker.notePlayer && speaker.notePlayer.valid) {
 		speaker.notePlayer.destroy();
 	}
 
-	const notePlayer = speaker.combinator.surface.create_entity({
-		name: 'musical-speaker-note-player',
-		position: {
-			x: (speaker.combinator.position as PositionXY).x + 2,
-			y: (speaker.combinator.position as PositionXY).y + 1
-		}
+	const settings = getSettings(speaker);
+
+	const blueprint = getTemplate({
+		globalPlayback: true,
+		volume: settings.volume
 	});
 
+	const ghosts = blueprint.build_blueprint({
+		surface: speaker.combinator.surface,
+		force: speaker.combinator.force,
+		position: speaker.combinator.position
+	});
+
+	if (ghosts.length != 1) {
+		throw "This should be impossible";
+	}
+
+	const [_, notePlayer] = ghosts[0].silent_revive();
+
 	if (!notePlayer) {
-		throw new Error("This should be impossible");
+		throw "Failed to revive ghost";
 	}
 
 	speaker.notePlayer = notePlayer;
@@ -151,8 +165,6 @@ export function reset(speaker: MusicalSpeaker) {
 		target_entity: speaker.combinator
 	});
 
-	const settings = getSettings(speaker);
-
 	const controlBehavior = notePlayer.get_or_create_control_behavior() as LuaProgrammableSpeakerControlBehavior;
 
 	controlBehavior.circuit_condition = {
@@ -164,15 +176,12 @@ export function reset(speaker: MusicalSpeaker) {
 	if (!programmableSpeakerInstrument) {
 		game.print(`Unknown instrument!`);
 	} else {
-		game.print(`Setting notes: ${programmableSpeakerInstrument}, ${settings.noteId}`);
 		controlBehavior.circuit_parameters = {
 			signal_value_is_pitch: false,
 			note_id: settings.noteId,
 			instrument_id: programmableSpeakerInstrument
 		}
 	}
-
-	game.print(tostring((notePlayer.get_or_create_control_behavior() as LuaProgrammableSpeakerControlBehavior).circuit_parameters.note_id))
 }
 
 /**
@@ -199,7 +208,7 @@ function onDestroyed(args: on_entity_destroyed) {
 }
 
 function onBuilt(args: on_built_entity | on_robot_built_entity | script_raised_built | on_entity_cloned) {
-	let entity;
+	let entity: LuaEntity;
 	if ('created_entity' in args) {
 		entity = args.created_entity;
 	} else if ('entity' in args) {
@@ -210,12 +219,11 @@ function onBuilt(args: on_built_entity | on_robot_built_entity | script_raised_b
 
 	if (entity.name === 'musical-speaker' && entity.unit_number) {
 		global.speakers[entity.unit_number] = create(entity);
+		entity.active = false
 	}
 }
 
 function checkCircuitSignals(args: on_tick) {
-	game.print("tick " + table_size(global.speakers));
-
 	for (const speakerId in global.speakers) {
 		const speaker = global.speakers[speakerId];
 
@@ -227,6 +235,12 @@ function checkCircuitSignals(args: on_tick) {
 
 		if (settings.volumeControlSignal && settings.volumeControlSignal.name) {
 			const volume = speaker.combinator.get_merged_signal(settings.volumeControlSignal);
+			if (settings.volume != volume) {
+				setSettings(speaker, {
+					...settings,
+					volume
+				});
+			}
 		}
 
 		if (speaker.notePlayer) {
@@ -239,6 +253,7 @@ function checkCircuitSignals(args: on_tick) {
 					speaker.isPlaying = true
 				} else if (speaker.isPlaying) {
 					// We think the speaker is playing, but it's not - reset it
+					speaker.isPlaying = false;
 					reset(speaker);				
 				}
 			}
