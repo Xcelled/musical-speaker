@@ -10,6 +10,8 @@ import "./prototypes/item/note-player";
 
 import "./prototypes/recipe/musical-speaker";
 
+import "./prototypes/signal/signal-placeholders";
+
 data.raw.technology['circuit-network'].effects!.push(
 	{
 		type: "unlock-recipe",

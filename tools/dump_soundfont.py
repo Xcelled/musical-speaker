@@ -25,14 +25,14 @@ LOG = logging.getLogger(__name__)
 
 default_soundfont = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
 
-instruments = list(get_inst_list(default_soundfont))[0:1]
+instruments = list(get_inst_list(default_soundfont))
 
 LOG.info("Found %s instruments", len(instruments))
 
 notes = [Note.from_midi(x) for x in range(21, 109)]
 percussion_notes = [Note.from_midi(x.value) for x in general_midi.PercussionNote]
 
-out_dir = Path('../public').absolute()
+out_dir = Path('../resources').absolute()
 
 sound_dir = out_dir.joinpath('sound')
 
@@ -48,7 +48,7 @@ for inst in tqdm(instruments, desc='Dumping instruments', unit='instrument'):
 	inst_dir = sound_dir.joinpath(inst_code)
 	inst_dir.mkdir(parents=True, exist_ok=True)
 	length = 10
-	velocity = 127 if is_percussion else 64
+	velocity = 64 if is_percussion else 64
 	n = percussion_notes if is_percussion else notes
 	note_dumps = dump_inst(inst, default_soundfont, inst_dir, length, n, velocity)
 

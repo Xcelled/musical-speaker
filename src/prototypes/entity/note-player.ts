@@ -20,9 +20,8 @@ notePlayer.flags = [
 ];
 notePlayer.collision_mask = [];
 notePlayer.collision_box = undefined;
-notePlayer.energy_source = {
-	type: 'void'
-};
+notePlayer.energy_source = baseSpeaker.energy_source
+notePlayer.energy_usage_per_tick = baseSpeaker.energy_usage_per_tick;
 
 notePlayer.instruments = programmableSpeakerInstruments as any;
 

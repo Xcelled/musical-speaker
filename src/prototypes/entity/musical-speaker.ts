@@ -26,3 +26,4 @@ const speaker: PrototypeConstantCombinator = {
 
 
 data.extend([speaker]);
+

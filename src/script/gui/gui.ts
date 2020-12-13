@@ -173,16 +173,17 @@ function readSettingsFromSpeaker(gui: Gui) {
 		throw "Tried to open a null speaker!";
 	}
 
-	const settings = MusicalSpeaker.getSettings(gui.speaker);
-
-	updateNoteSelectOptions(gui);
+	const settings = MusicalSpeaker.refreshSettings(gui.speaker);
 
 	gui.volumeSlider.slider_value = settings.volume;
 	gui.enabledConditionSelect.firstSignalChooser.elem_value = settings.enabledCondition.first_signal;
-	gui.categorySelect.selected_index = settings.categoryId + 1;
-	gui.instrumentSelect.selected_index = settings.instrumentId + 1;
-	gui.noteSelect.selected_index = settings.noteId + 1;
 	gui.volumeControlSelect.elem_value = settings.volumeControlSignal;
+
+	gui.categorySelect.selected_index = settings.categoryId + 1;
+	updateNoteSelectOptions(gui);
+	gui.instrumentSelect.selected_index = settings.instrumentId + 1;
+	updateNoteSelectOptions(gui);
+	gui.noteSelect.selected_index = settings.noteId + 1;
 }
 
 export function open(gui: Gui, speaker: MusicalSpeaker.Type) {
@@ -228,6 +229,7 @@ function onSliderValueChanged(gui:Gui, args: on_gui_value_changed) {
 function onSelectionChanged(gui:Gui, args: on_gui_selection_state_changed) {
 	// For now, just blind save
 	writeSettingsToSpeaker(gui);
+	updateNoteSelectOptions(gui);
 
 	if (args.element.index === gui.noteSelect.index) {
 		const note = categories[gui.categorySelect.selected_index - 1]

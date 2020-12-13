@@ -1,8 +1,8 @@
-import { getProgrammableSpeakerInstrumentId } from './sounds';
+import { categories, getProgrammableSpeakerInstrumentId } from './sounds';
 import { getTemplate } from './templates';
 import * as Event from '__stdlib__/stdlib/event/event';
 
-import { position } from 'math2d';
+import { escapeSignal, unescapeSignal } from './signal-escaping';
 
 /**
  * 1 based cause these are fed directly to the lua API
@@ -34,9 +34,15 @@ interface MusicalSpeakerSettings {
 }
 
 interface MusicalSpeaker {
-	combinator: LuaEntity
-	notePlayer?: LuaEntity,
-	isPlaying: boolean
+	combinator: LuaEntity,
+	notePlayer?: {
+		entity: LuaEntity,
+		controlBehavior: LuaProgrammableSpeakerControlBehavior
+	},
+	controlBehavior: LuaConstantCombinatorControlBehavior,
+
+	isPlaying: boolean,
+	settings: Readonly<MusicalSpeakerSettings>
 }
 
 export type Type = MusicalSpeaker;
@@ -51,51 +57,71 @@ export function registerEvents() {
 		onDestroyed
 	);
 	Event.on_nth_tick(1, checkCircuitSignals);
+
+	Event.register([defines.events.on_entity_settings_pasted], onEntitySettingsPasted)
 }
 
 export function create(combinator: LuaEntity): MusicalSpeaker {
+
 	const speaker: MusicalSpeaker = {
 		combinator,
 		notePlayer: undefined,
-		isPlaying: false
+		isPlaying: false,
+		settings: readSettings(combinator),
+		controlBehavior: combinator.get_or_create_control_behavior() as LuaConstantCombinatorControlBehavior
 	}
 
-	setSettings(speaker, {
-		categoryId: 0,
-		instrumentId: 0,
-		noteId: 0,
-		volume: 100,
-		volumeControlSignal: undefined,
-		enabledCondition: {}
-	});
+	// Persist initial settings
+	setSettings(speaker, speaker.settings);
 
 	script.register_on_entity_destroyed(combinator);
 	return speaker
 }
 
-
 /**
  * Reads the settings for this speaker from the backing combinator
  */
-export function getSettings(speaker: MusicalSpeaker): Readonly<MusicalSpeakerSettings> {
-	const m: { [key: number]: ConstantCombinatorParameters | undefined} = {};
+function readSettings(combinator: LuaEntity): Readonly<MusicalSpeakerSettings> {
+	const m: { [key: number]: ConstantCombinatorParameters } = {};
 
-	(speaker.combinator.get_or_create_control_behavior() as LuaConstantCombinatorControlBehavior).parameters?.forEach(p => m[p.index] = p);
+	(combinator.get_or_create_control_behavior() as LuaConstantCombinatorControlBehavior).parameters?.forEach(p => m[p.index] = p);
 
-	const volume = m[CombinatorSlots.VOLUME]?.count ?? 100;
+	const volume = m[CombinatorSlots.VOLUME].signal.name ? m[CombinatorSlots.VOLUME].count : 100;
 
-	return {
+	const settings = {
 		volume,
-		volumeControlSignal: m[CombinatorSlots.VOLUME_CONTROL_SIGNAL]?.signal,
+		volumeControlSignal: unescapeSignal(m[CombinatorSlots.VOLUME_CONTROL_SIGNAL].signal),
 		enabledCondition: {
-			first_signal: m[CombinatorSlots.ENABLED_FIRST_SIGNAL]?.signal,
-			comparator: '>',
+			first_signal: unescapeSignal(m[CombinatorSlots.ENABLED_FIRST_SIGNAL].signal),
+			comparator: ">",
 			constant: 0
 		},
 		categoryId: m[CombinatorSlots.CATEGORY_ID]?.count ?? 0,
 		instrumentId: m[CombinatorSlots.INSTRUMENT_ID]?.count ?? 0,
 		noteId: m[CombinatorSlots.NOTE_ID]?.count ?? 0
 	}
+
+	if (settings.categoryId >= categories.length) {
+		settings.categoryId = 0;
+	}
+
+	if (settings.instrumentId >= categories[settings.categoryId].instruments.length) {
+		settings.instrumentId = 0;
+	}
+
+	if (settings.noteId >= categories[settings.categoryId].instruments[settings.instrumentId].notes.length) {
+		settings.noteId = 0;
+	}
+
+	return settings as Readonly<MusicalSpeakerSettings>;
+}
+
+/**
+ * Reload the settings for this speaker from the combinator
+ * (but doesn't reset the speaker)
+ */
+export function refreshSettings(speaker: MusicalSpeaker) {
+	return speaker.settings = readSettings(speaker.combinator);
 }
 
 
@@ -103,16 +129,21 @@ export function getSettings(speaker: MusicalSpeaker): Readonly<MusicalSpeakerSet
  * Applies new settings for this speaker and persists them to the backing combinator
  */
 export function setSettings(speaker: MusicalSpeaker, settings: MusicalSpeakerSettings) {
+	speaker.settings = settings;
+
 	const parameters: ConstantCombinatorParameters[] = [
 		{ index: CombinatorSlots.VOLUME, signal: { type: "virtual", name: "signal-V" }, count: settings.volume },
-		{ index: CombinatorSlots.VOLUME_CONTROL_SIGNAL, signal: settings.volumeControlSignal ?? EMPTY_SIGNAL, count: 0},
-		{ index: CombinatorSlots.ENABLED_FIRST_SIGNAL, signal: settings.enabledCondition.first_signal ?? EMPTY_SIGNAL, count: 0 },
+		{ index: CombinatorSlots.VOLUME_CONTROL_SIGNAL, signal: escapeSignal(settings.volumeControlSignal ?? EMPTY_SIGNAL), count: 0},
+		{ index: CombinatorSlots.ENABLED_FIRST_SIGNAL, signal: escapeSignal(settings.enabledCondition.first_signal ?? EMPTY_SIGNAL), count: 0 },
 		{ index: CombinatorSlots.CATEGORY_ID, signal: { type: "virtual", name: "signal-C" }, count: settings.categoryId },
 		{ index: CombinatorSlots.INSTRUMENT_ID, signal: { type: "virtual", name: "signal-I" }, count: settings.instrumentId },
 		{ index: CombinatorSlots.NOTE_ID, signal: { type: "virtual", name: "signal-N" }, count: settings.noteId },
 	];
 	
-	(speaker.combinator.get_or_create_control_behavior() as LuaConstantCombinatorControlBehavior).parameters = parameters;
+	const controlBehavior = speaker.controlBehavior;
+	
+	controlBehavior.parameters = parameters;
+	controlBehavior.enabled = false;
 
 	// TODO: Skip this if we can
 	reset(speaker);
@@ -126,15 +157,15 @@ export function reset(speaker: MusicalSpeaker) {
 		throw "Lolwhat";
 	}
 
-	if (speaker.notePlayer && speaker.notePlayer.valid) {
-		speaker.notePlayer.destroy();
+	if (speaker.notePlayer && speaker.notePlayer.entity.valid) {
+		speaker.notePlayer.entity.destroy();
 	}
 
-	const settings = getSettings(speaker);
+	speaker.isPlaying = false;
 
 	const blueprint = getTemplate({
 		globalPlayback: true,
-		volume: settings.volume
+		volume: speaker.settings.volume
 	});
 
 	const ghosts = blueprint.build_blueprint({
@@ -153,7 +184,18 @@ export function reset(speaker: MusicalSpeaker) {
 		throw "Failed to revive ghost";
 	}
 
-	speaker.notePlayer = notePlayer;
+	const controlBehavior = notePlayer.get_or_create_control_behavior() as LuaProgrammableSpeakerControlBehavior;
+
+	controlBehavior.circuit_condition = {
+		condition: speaker.settings.enabledCondition
+	};
+
+	speaker.notePlayer = {
+		entity: notePlayer,
+		controlBehavior
+	};
+
+	notePlayer.destructible = false;
 
 	notePlayer.connect_neighbour({
 		wire: defines.wire_type.red,
@@ -165,20 +207,14 @@ export function reset(speaker: MusicalSpeaker) {
 		target_entity: speaker.combinator
 	});
 
-	const controlBehavior = notePlayer.get_or_create_control_behavior() as LuaProgrammableSpeakerControlBehavior;
-
-	controlBehavior.circuit_condition = {
-		condition: settings.enabledCondition
-	};
-
-	const programmableSpeakerInstrument = getProgrammableSpeakerInstrumentId(settings.categoryId, settings.instrumentId);
+	const programmableSpeakerInstrument = getProgrammableSpeakerInstrumentId(speaker.settings.categoryId, speaker.settings.instrumentId);
 
 	if (!programmableSpeakerInstrument) {
 		game.print(`Unknown instrument!`);
 	} else {
 		controlBehavior.circuit_parameters = {
 			signal_value_is_pitch: false,
-			note_id: settings.noteId,
+			note_id: speaker.settings.noteId,
 			instrument_id: programmableSpeakerInstrument
 		}
 	}
@@ -188,10 +224,13 @@ export function reset(speaker: MusicalSpeaker) {
  * Removes all entities associated with this musical speaker
  */
 export function destroy(speaker: MusicalSpeaker) {
-	[speaker.notePlayer, speaker.combinator]
-		.filter(e => e != undefined)
-		.filter(e => e!.valid)
-		.forEach(e => e!.destroy());
+	if (speaker.notePlayer && speaker.notePlayer.entity.valid) {
+		speaker.notePlayer.entity.destroy();
+	}
+
+	if (speaker.combinator.valid) {
+		speaker.combinator.destroy();
+	}
 }
 
 function onDestroyed(args: on_entity_destroyed) {
@@ -219,44 +258,48 @@ function onBuilt(args: on_built_entity | on_robot_built_entity | script_raised_b
 
 	if (entity.name === 'musical-speaker' && entity.unit_number) {
 		global.speakers[entity.unit_number] = create(entity);
-		entity.active = false
 	}
 }
 
 function checkCircuitSignals(args: on_tick) {
-	for (const speakerId in global.speakers) {
-		const speaker = global.speakers[speakerId];
-
-		if (!speaker) {
-			continue;
-		}
-
-		const settings = getSettings(speaker);
-
-		if (settings.volumeControlSignal && settings.volumeControlSignal.name) {
-			const volume = speaker.combinator.get_merged_signal(settings.volumeControlSignal);
-			if (settings.volume != volume) {
-				setSettings(speaker, {
-					...settings,
-					volume
-				});
-			}
-		}
-
-		if (speaker.notePlayer) {
-			const controlBehavior = speaker.notePlayer.get_control_behavior() as LuaProgrammableSpeakerControlBehavior;
-
-			if (controlBehavior) {
-				const currentlyPlaying = controlBehavior.circuit_condition.fulfilled;
+	// Very tight loop here so use pairs to get as low as we can
+	for (const [speakerId, speaker] of pairs(global.speakers)) {
+		if (speaker) {
+			if (speaker.notePlayer) {
+				const currentlyPlaying = speaker.notePlayer.controlBehavior.circuit_condition.fulfilled;
 
 				if (currentlyPlaying) {
-					speaker.isPlaying = true
+					if (!speaker.isPlaying) {
+						const settings = speaker.settings;
+
+						if (settings.volumeControlSignal && settings.volumeControlSignal.name) {
+							const volume = speaker.combinator.get_merged_signal(settings.volumeControlSignal) ?? 100;
+							if (volume != 0 && settings.volume != volume) {
+								setSettings(speaker, {
+									...settings,
+									volume
+								});
+							}
+						}
+						speaker.isPlaying = true
+					}
 				} else if (speaker.isPlaying) {
 					// We think the speaker is playing, but it's not - reset it
 					speaker.isPlaying = false;
-					reset(speaker);				
+					reset(speaker);
 				}
 			}
+		}
+	}
+}
+
+function onEntitySettingsPasted(args: on_entity_settings_pasted) {
+	if (args.destination.unit_number) {
+		const speaker = global.speakers[args.destination.unit_number];
+
+		if (speaker) {
+			refreshSettings(speaker);
+			reset(speaker);
 		}
 	}
 }

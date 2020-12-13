@@ -1,6 +1,6 @@
 {
   "name": "musical-speaker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Adds a speaker to the game that includes 189 instruments for use in music production.",
   "main": "src/control.ts",
   "dependencies": {},
@@ -10,8 +10,11 @@
     "typescript-to-lua": "^0.36.0"
   },
   "scripts": {
-    "build": "tstl; cp -r public/* dist/",
-    "dev": "tstl --watch"
+    "clean": "rm -r dist",
+    "dev": "tstl --watch",
+    "build": "tstl; cp -r resources/locale dist/; cp -r resources/script dist/",
+    "copy-sounds": "cp -r resources/sound dist/",
+    "dist": "clean; build; copy-sounds"
   },
   "repository": {
     "type": "git",
