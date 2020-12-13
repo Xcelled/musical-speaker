@@ -4,7 +4,7 @@
   "description": "Adds a speaker to the game that includes 189 instruments for use in music production.",
   "main": "src/control.ts",
   "devDependencies": {
-    "@types/factorio": "git+https://github.com/sguest/factorio-types.git",
+    "@types/factorio": "git+https://github.com/Xcelled/factorio-types.git",
     "lua-types": "^2.8.0",
     "typescript-to-lua": "^0.36.0"
   },
