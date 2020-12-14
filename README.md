@@ -15,6 +15,10 @@ Features:
 
 ![](./images/speaker-1.png)
 
+# Installation
+
+Right now, the number of sound files in the mod precludes uploading it directly to the mod portal. To install the mod, download the release zip file from [GitHub](https://github.com/Xcelled/musical-speaker/releases) and drop it into your mods directory.
+
 # Example usage
 This [video](https://www.youtube.com/watch?v=WMUe16I7cuk) was made entirely in Factorio by utilizing musical-speaker. You can grab the save from [here](https://github.com/Xcelled/musical-speaker/raw/saves/piano-let%20it%20go.zip) to try it yourself!
 
