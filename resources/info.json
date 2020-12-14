@@ -1,7 +1,7 @@
 {
     "name": "musical-speaker",
     "version": "1.0.1",
-    "title": "Musical Speaker",
+    "title": "Musical speaker",
     "author": "Mooeing-747",
     "factorio_version": "1.1",
     "dependencies": ["base >= 1.0", "stdlib"],
