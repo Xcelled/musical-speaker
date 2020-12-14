@@ -15,7 +15,7 @@
     "dev": "tstl --watch",
     "build": "tstl && copyfiles \"resources/**/*\" dist --exclude \"resources/sound/**/*\" --up 1",
     "copy-sounds": "copyfiles \"resources/sound/**/*\" dist --up 1",
-    "dist": "clean; build; copy-sounds"
+    "dist": "yarn run clean; yarn run build; yarn run copy-sounds"
   },
   "repository": {
     "type": "git",

@@ -286,7 +286,11 @@ function checkCircuitSignals(args: on_tick) {
 				} else if (speaker.isPlaying) {
 					// We think the speaker is playing, but it's not - reset it
 					speaker.isPlaying = false;
-					reset(speaker);
+
+					// Hack to let percussions finish their sounds
+					if (speaker.settings.categoryId !== 16) {
+						reset(speaker);
+					}
 				}
 			}
 		}
