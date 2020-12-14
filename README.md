@@ -16,7 +16,7 @@ Features:
 ![](./images/speaker-1.png)
 
 # Example usage
-This [video](https://www.youtube.com/watch?v=WMUe16I7cuk) was made entirely in Factorio by utilizing musical-speaker.
+This [video](https://www.youtube.com/watch?v=WMUe16I7cuk) was made entirely in Factorio by utilizing musical-speaker. You can grab the save from [here](https://github.com/Xcelled/musical-speaker/raw/saves/piano-let%20it%20go.zip) to try it yourself!
 
 [![video thumbnail](https://img.youtube.com/vi/WMUe16I7cuk/0.jpg)](https://www.youtube.com/watch?v=WMUe16I7cuk "Let it go - Factorio Style")
 
@@ -38,7 +38,8 @@ This [video](https://www.youtube.com/watch?v=WMUe16I7cuk) was made entirely in F
 - Circuit-network signal to control instrument.
 - Make enabled condition fully controllable.
 - Support GM2_SM (?).
-- Split the sounds from the code (?)
+- Split the sounds from the code
+	- This is required to be able to upload the mod to the portal
 
 # Implementation
 - Musical-speaker is implemented in _TypeScript_ and transpiled to lua by the amazing [TypeScriptToLua](https://typescripttolua.github.io/). I doubt musical-speaker would have been finished without this project.
