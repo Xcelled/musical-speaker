@@ -7,7 +7,7 @@ import { escapeSignal, unescapeSignal } from './signal-escaping';
 /**
  * 1 based cause these are fed directly to the lua API
  */
-enum CombinatorSlots {
+enum CombinatorSlot {
 	VOLUME = 1,
 	VOLUME_CONTROL_SIGNAL = 2,
 	ENABLED_FIRST_SIGNAL = 3,
@@ -86,19 +86,23 @@ function readSettings(combinator: LuaEntity): Readonly<MusicalSpeakerSettings> {
 
 	(combinator.get_or_create_control_behavior() as LuaConstantCombinatorControlBehavior).parameters?.forEach(p => m[p.index] = p);
 
-	const volume = m[CombinatorSlots.VOLUME].signal.name ? m[CombinatorSlots.VOLUME].count : 100;
+	function getCountOrDefault(slot: CombinatorSlot, defaultValue: number): number {
+		return m[slot as number].signal.name ? m[slot].count : defaultValue;
+	}
+
+	const volume = getCountOrDefault(CombinatorSlot.VOLUME, 100);
 
 	const settings = {
 		volume,
-		volumeControlSignal: unescapeSignal(m[CombinatorSlots.VOLUME_CONTROL_SIGNAL].signal),
+		volumeControlSignal: unescapeSignal(m[CombinatorSlot.VOLUME_CONTROL_SIGNAL].signal),
 		enabledCondition: {
-			first_signal: unescapeSignal(m[CombinatorSlots.ENABLED_FIRST_SIGNAL].signal),
+			first_signal: unescapeSignal(m[CombinatorSlot.ENABLED_FIRST_SIGNAL].signal),
 			comparator: ">",
 			constant: 0
 		},
-		categoryId: m[CombinatorSlots.CATEGORY_ID]?.count ?? 0,
-		instrumentId: m[CombinatorSlots.INSTRUMENT_ID]?.count ?? 0,
-		noteId: m[CombinatorSlots.NOTE_ID]?.count ?? 0
+		categoryId: getCountOrDefault(CombinatorSlot.CATEGORY_ID, 0),
+		instrumentId: getCountOrDefault(CombinatorSlot.INSTRUMENT_ID, 0),
+		noteId: getCountOrDefault(CombinatorSlot.NOTE_ID, 0)
 	}
 
 	if (settings.categoryId >= categories.length) {
@@ -132,12 +136,12 @@ export function setSettings(speaker: MusicalSpeaker, settings: MusicalSpeakerSet
 	speaker.settings = settings;
 
 	const parameters: ConstantCombinatorParameters[] = [
-		{ index: CombinatorSlots.VOLUME, signal: { type: "virtual", name: "signal-V" }, count: settings.volume },
-		{ index: CombinatorSlots.VOLUME_CONTROL_SIGNAL, signal: escapeSignal(settings.volumeControlSignal ?? EMPTY_SIGNAL), count: 0},
-		{ index: CombinatorSlots.ENABLED_FIRST_SIGNAL, signal: escapeSignal(settings.enabledCondition.first_signal ?? EMPTY_SIGNAL), count: 0 },
-		{ index: CombinatorSlots.CATEGORY_ID, signal: { type: "virtual", name: "signal-C" }, count: settings.categoryId },
-		{ index: CombinatorSlots.INSTRUMENT_ID, signal: { type: "virtual", name: "signal-I" }, count: settings.instrumentId },
-		{ index: CombinatorSlots.NOTE_ID, signal: { type: "virtual", name: "signal-N" }, count: settings.noteId },
+		{ index: CombinatorSlot.VOLUME, signal: { type: "virtual", name: "signal-V" }, count: settings.volume },
+		{ index: CombinatorSlot.VOLUME_CONTROL_SIGNAL, signal: escapeSignal(settings.volumeControlSignal ?? EMPTY_SIGNAL), count: 0},
+		{ index: CombinatorSlot.ENABLED_FIRST_SIGNAL, signal: escapeSignal(settings.enabledCondition.first_signal ?? EMPTY_SIGNAL), count: 0 },
+		{ index: CombinatorSlot.CATEGORY_ID, signal: { type: "virtual", name: "signal-C" }, count: settings.categoryId },
+		{ index: CombinatorSlot.INSTRUMENT_ID, signal: { type: "virtual", name: "signal-I" }, count: settings.instrumentId },
+		{ index: CombinatorSlot.NOTE_ID, signal: { type: "virtual", name: "signal-N" }, count: settings.noteId },
 	];
 	
 	const controlBehavior = speaker.controlBehavior;
