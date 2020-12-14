@@ -6,7 +6,8 @@
 	  "baseUrl": "./",
 	  "outDir": "./dist",
 	  "rootDir": "./src",
-	  "moduleResolution": "node"
+	  "moduleResolution": "node",
+	  "types": ["lua-types/5.2", "@types/factorio"]
 	},
 	"tstl": {
 	  "luaTarget": "5.2",

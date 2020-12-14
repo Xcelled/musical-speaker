@@ -5,14 +5,16 @@
   "main": "src/control.ts",
   "devDependencies": {
     "@types/factorio": "git+https://github.com/Xcelled/factorio-types.git",
+    "copyfiles": "^2.4.1",
     "lua-types": "^2.8.0",
+    "rimraf": "^3.0.2",
     "typescript-to-lua": "^0.36.0"
   },
   "scripts": {
-    "clean": "rm -r dist",
+    "clean": "rimraf dist",
     "dev": "tstl --watch",
-    "build": "tstl; cp -r resources/locale dist/; cp -r resources/script dist/",
-    "copy-sounds": "cp -r resources/sound dist/",
+    "build": "tstl && copyfiles \"resources/**/*\" dist --exclude \"resources/sound/**/*\" --up 1",
+    "copy-sounds": "copyfiles \"resources/sound/**/*\" dist --up 1",
     "dist": "clean; build; copy-sounds"
   },
   "repository": {

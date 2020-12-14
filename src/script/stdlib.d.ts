@@ -21,7 +21,7 @@ declare module '__stdlib__/stdlib/event/event' {
 declare module '__stdlib__/stdlib/event/gui' {
 	interface Gui {
 		on_click(gui_element_pattern: string, handler: (arg: on_gui_click) => void): Gui,
-		on_checked_state_changed(gui_element_pattern: string, handler: (arg: on_gui_checked_state_change) => void): Gui,
+		on_checked_state_changed(gui_element_pattern: string, handler: (arg: on_gui_checked_state_changed) => void): Gui,
 		on_selection_state_changed(gui_element_pattern: string, handler: (arg: on_gui_selection_state_changed) => void): Gui,
 		on_value_changed(gui_element_pattern: string, handler: (arg: on_gui_value_changed) => void): Gui
 	}
