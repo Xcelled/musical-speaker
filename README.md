@@ -12,10 +12,13 @@ Features:
 - Sounds stop when the speaker is disabled via circuit network (Vanilla programmable speaker continues playing).
 - Control volume via circuit network.
 
-# Example usage
-This [video](https://www.youtube.com/watch?v=bkav_L3kp4E) was made entirely in Factorio by utilizing musical-speaker.
 
-[![IMAGE ALT TEXT](https://img.youtube.com/vi/bkav_L3kp4E/0.jpg)](http://www.youtube.com/watch?v=bkav_L3kp4E "Let it go [Factorio]")
+![](./images/speaker-1.png)
+
+# Example usage
+This [video](https://www.youtube.com/watch?v=WMUe16I7cuk) was made entirely in Factorio by utilizing musical-speaker.
+
+[![video thumbnail](https://img.youtube.com/vi/WMUe16I7cuk/0.jpg)](https://www.youtube.com/watch?v=WMUe16I7cuk "Let it go - Factorio Style")
 
 # Caveats
 - For right now, enabled condition comparison is limited to `> 0`.
@@ -35,6 +38,7 @@ This [video](https://www.youtube.com/watch?v=bkav_L3kp4E) was made entirely in F
 - Circuit-network signal to control instrument.
 - Make enabled condition fully controllable.
 - Support GM2_SM (?).
+- Split the sounds from the code (?)
 
 # Implementation
 - Musical-speaker is implemented in _TypeScript_ and transpiled to lua by the amazing [TypeScriptToLua](https://typescripttolua.github.io/). I doubt musical-speaker would have been finished without this project.

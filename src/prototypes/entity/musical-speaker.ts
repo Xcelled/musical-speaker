@@ -6,6 +6,7 @@ const speaker: PrototypeConstantCombinator = {
 	...baseSpeaker,
 	type: 'constant-combinator',
 	name: 'musical-speaker',
+	icon: '__musical-speaker__/graphics/icons/musical-speaker.png',
 	flags: [...baseSpeaker.flags!, 'not-rotatable', 'hide-alt-info'],
 	sprites: baseSpeaker.sprite,
 	item_slot_count: 40,
